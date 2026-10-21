@@ -1,5 +1,6 @@
+import { PaymentField } from "./PaymentField";
 import { useRef, useState } from "react";
-import { ChevronDown, Check, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import {
   amountInput,
   categoryKind,
@@ -72,14 +73,6 @@ export function TransactionForm({
   const lock = useRef(false);
   const amountRef = useRef<HTMLInputElement>(null);
   const token = useRef(crypto.randomUUID());
-  const selected = data.merchants.find((m) => m.id === merchantId);
-  const suggestion = data.categories.find(
-    (c) =>
-      c.id === selected?.defaultCategoryId &&
-      !c.archived &&
-      c.kind === categoryKind(type) &&
-      c.id !== categoryId,
-  );
   const categories = data.categories.filter(
     (c) =>
       c.kind === categoryKind(type) &&
@@ -105,7 +98,10 @@ export function TransactionForm({
           categoryId,
           merchantId: merchantId || undefined,
           description: description.trim(),
-          paymentMethod: paymentMethod.trim(),
+          paymentMethod:
+            initial?.paymentMethod === paymentMethod
+              ? paymentMethod
+              : paymentMethod.trim(),
           ...parts,
           occurredAt: override ? parseLocal(date, time) : now,
           createdAt: initial?.createdAt || now,
@@ -182,6 +178,58 @@ export function TransactionForm({
           required
         />
       </div>
+      <div className="optional-fields">
+        <label>
+          Find a saved merchant
+          <input
+            type="search"
+            placeholder="Search merchants"
+            value={merchantQuery}
+            maxLength={80}
+            onChange={(e) => setMerchantQuery(e.target.value)}
+          />
+        </label>
+        <label>
+          Merchant / payee
+          <select
+            value={merchantId}
+            onChange={(e) => {
+              const id = e.target.value;
+              setMerchantId(id);
+              const merchant = data.merchants.find((m) => m.id === id);
+              const preferred = data.categories.find(
+                (c) =>
+                  c.id === merchant?.defaultCategoryId &&
+                  !c.archived &&
+                  c.kind === categoryKind(type),
+              );
+              if (preferred) selectCategory(preferred.id);
+            }}
+          >
+            <option value="">None</option>
+            {data.merchants
+              .filter(
+                (m) =>
+                  (!m.archived || m.id === initial?.merchantId) &&
+                  (!merchantQuery ||
+                    m.name
+                      .toLowerCase()
+                      .includes(merchantQuery.toLowerCase()) ||
+                    m.id === merchantId),
+              )
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                  {m.archived ? " (archived)" : ""}
+                </option>
+              ))}
+          </select>
+        </label>
+        {!data.merchants.some((m) => !m.archived) && (
+          <p className="hint">Save merchants in Settings → Merchants.</p>
+        )}
+      </div>
       <div className="section-label">
         Category <span>Required</span>
       </div>
@@ -210,149 +258,81 @@ export function TransactionForm({
           </button>
         ))}
       </div>
-      <details className="optional" open={initial ? true : undefined}>
-        <summary>
-          More details{" "}
-          <span>
-            Optional <ChevronDown size={14} />
-          </span>
-        </summary>
-        <div className="optional-fields">
+      <div className="optional-fields">
+        <label>
+          Description
+          <input
+            placeholder="What was it for?"
+            value={description}
+            maxLength={500}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </label>
+        <PaymentField
+          key={token.current}
+          methods={data.paymentMethods}
+          value={paymentMethod}
+          onChange={setPaymentMethod}
+        />
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={override}
+            onChange={(e) => {
+              setOverride(e.target.checked);
+              if (e.target.checked && !initial) {
+                const p = localParts();
+                setDate(p.localDate);
+                setTime(p.localTime);
+              }
+            }}
+          />
+          Set date and time
+        </label>
+        {override && (
+          <div className="two-col">
+            <label>
+              Date
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Time
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                required
+              />
+            </label>
+          </div>
+        )}
+        {type === "refund" && (
           <label>
-            Find a saved merchant
-            <input
-              type="search"
-              placeholder="Search merchants"
-              value={merchantQuery}
-              maxLength={80}
-              onChange={(e) => setMerchantQuery(e.target.value)}
-            />
-          </label>
-          <label>
-            Merchant / payee
+            Original expense (optional)
             <select
-              value={merchantId}
-              onChange={(e) => setMerchantId(e.target.value)}
+              value={originalExpenseId}
+              onChange={(e) => setOriginalExpenseId(e.target.value)}
             >
-              <option value="">None</option>
-              {data.merchants
-                .filter(
-                  (m) =>
-                    (!m.archived || m.id === initial?.merchantId) &&
-                    (!merchantQuery ||
-                      m.name
-                        .toLowerCase()
-                        .includes(merchantQuery.toLowerCase()) ||
-                      m.id === merchantId),
-                )
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                    {m.archived ? " (archived)" : ""}
+              <option value="">No linked expense</option>
+              {data.transactions
+                .filter((t) => t.type === "expense" && t.id !== initial?.id)
+                .sort((a, b) => b.occurredAt - a.occurredAt)
+                .map((t) => (
+                  <option value={t.id} key={t.id}>
+                    {t.localDate} · {money(t.amount)} ·{" "}
+                    {data.merchants.find((m) => m.id === t.merchantId)?.name ||
+                      data.categories.find((c) => c.id === t.categoryId)?.name}
                   </option>
                 ))}
             </select>
           </label>
-          {!data.merchants.some((m) => !m.archived) && (
-            <p className="hint">Save merchants in Settings → Merchants.</p>
-          )}
-          {suggestion && (
-            <button
-              type="button"
-              className="suggestion"
-              onClick={() => selectCategory(suggestion.id)}
-            >
-              Use {suggestion.name} for {selected?.name}
-            </button>
-          )}
-          <label>
-            Description
-            <input
-              placeholder="What was it for?"
-              value={description}
-              maxLength={500}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </label>
-          <label>
-            Payment method
-            <input
-              list="payment-methods"
-              placeholder="Optional"
-              value={paymentMethod}
-              maxLength={80}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-            />
-            <datalist id="payment-methods">
-              <option>Cash</option>
-              <option>Debit card</option>
-              <option>Credit card</option>
-              <option>Bank transfer</option>
-            </datalist>
-          </label>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={override}
-              onChange={(e) => {
-                setOverride(e.target.checked);
-                if (e.target.checked && !initial) {
-                  const p = localParts();
-                  setDate(p.localDate);
-                  setTime(p.localTime);
-                }
-              }}
-            />
-            Set date and time
-          </label>
-          {override && (
-            <div className="two-col">
-              <label>
-                Date
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                Time
-                <input
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  required
-                />
-              </label>
-            </div>
-          )}
-          {type === "refund" && (
-            <label>
-              Original expense (optional)
-              <select
-                value={originalExpenseId}
-                onChange={(e) => setOriginalExpenseId(e.target.value)}
-              >
-                <option value="">No linked expense</option>
-                {data.transactions
-                  .filter((t) => t.type === "expense" && t.id !== initial?.id)
-                  .sort((a, b) => b.occurredAt - a.occurredAt)
-                  .map((t) => (
-                    <option value={t.id} key={t.id}>
-                      {t.localDate} · {money(t.amount)} ·{" "}
-                      {data.merchants.find((m) => m.id === t.merchantId)
-                        ?.name ||
-                        data.categories.find((c) => c.id === t.categoryId)
-                          ?.name}
-                    </option>
-                  ))}
-              </select>
-            </label>
-          )}
-        </div>
-      </details>
+        )}
+      </div>
       {error && (
         <p className="error" role="alert">
           {error}
@@ -367,7 +347,9 @@ export function TransactionForm({
         </button>
       )}
       {!initial && (
-        <p className="entry-footer">On your device. For your eyes only.</p>
+        <p className="entry-footer" aria-hidden="true">
+          &nbsp;
+        </p>
       )}
     </form>
   );

@@ -1,6 +1,8 @@
 import type { IDBPTransaction } from "idb";
 import { DATABASE_VERSION, type LedgerDB, type LedgerSchema } from "./db";
 import {
+  initialPaymentMethods,
+  type PaymentMethod,
   categoryKind,
   normalizeName,
   type Category,
@@ -14,6 +16,7 @@ import {
 } from "./model";
 import { dateNumber } from "./calendar";
 export const ALL_STORES = [
+  "paymentMethods",
   "transactions",
   "categories",
   "merchants",
@@ -26,6 +29,7 @@ export const ALL_STORES = [
 ] as const;
 export type Store = (typeof ALL_STORES)[number];
 export interface BackupData {
+  paymentMethods: PaymentMethod[];
   transactions: Transaction[];
   categories: Category[];
   merchants: Merchant[];
@@ -142,11 +146,13 @@ export function validateBackup(input: unknown): Backup {
     fail("invalid export timestamp.");
   const version = root.databaseVersion as number;
   const required = ALL_STORES.filter((s) =>
-    version === 1
-      ? !["schedules", "occurrences", "budgets", "imports"].includes(s)
-      : version === 2
-        ? s !== "imports"
-        : true,
+    s === "paymentMethods"
+      ? version >= 4
+      : version === 1
+        ? !["schedules", "occurrences", "budgets", "imports"].includes(s)
+        : version === 2
+          ? s !== "imports"
+          : true,
   );
   const raw = record(root.data, [...ALL_STORES], required);
   const data = clean({
@@ -155,6 +161,8 @@ export function validateBackup(input: unknown): Backup {
       ALL_STORES.filter((k) => raw[k] === undefined).map((k) => [k, []]),
     ),
   }) as unknown as BackupData;
+  if (version < 4 && raw.paymentMethods === undefined)
+    data.paymentMethods = clean(initialPaymentMethods);
   let count = 0;
   for (const store of ALL_STORES) {
     const rows = data[store];
@@ -169,6 +177,19 @@ export function validateBackup(input: unknown): Backup {
       if (ids.has(row.id)) fail(`duplicate identifier in ${store}.`);
       ids.add(row.id);
     }
+  }
+  const methodNames = new Set<string>();
+  for (const method of data.paymentMethods) {
+    const r = record(method, ["id", "name", "normalizedName", "archived"]);
+    text(r.name, 80);
+    text(r.normalizedName, 2000);
+    bool(r.archived);
+    if (
+      r.normalizedName !== normalizeName(method.name) ||
+      methodNames.has(method.normalizedName)
+    )
+      fail("invalid or duplicate payment method name.");
+    methodNames.add(method.normalizedName);
   }
   for (const c of data.categories) {
     const r = record(
@@ -463,6 +484,26 @@ export function validateBackup(input: unknown): Backup {
     fail("missing initialization marker.");
   const schema = data.metadata.find((m) => m.id === "schema");
   if (!schema || schema.value !== version) fail("schema marker mismatch.");
+  if (version < 4 && raw.paymentMethods === undefined) {
+    const known = new Set(data.paymentMethods.map((m) => m.normalizedName));
+    for (const row of [...data.transactions, ...data.schedules]) {
+      const name = row.paymentMethod.trim().replace(/\s+/g, " ");
+      const normalizedName = normalizeName(name);
+      if (normalizedName && !known.has(normalizedName)) {
+        known.add(normalizedName);
+        data.paymentMethods.push({
+          id: `legacy:${name}`,
+          name,
+          normalizedName,
+          archived: false,
+        });
+      }
+    }
+  }
+  if (
+    ALL_STORES.reduce((total, store) => total + data[store].length, 0) > 1000000
+  )
+    fail("too many records after normalization.");
   schema.value = DATABASE_VERSION;
   prefs.summaryMode ??= "basic";
   return {

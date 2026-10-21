@@ -13,7 +13,7 @@ The automated report is in TEST_REPORT.md. Use a deployed production build for t
 ## Entry and history
 
 - Enter 0.29, 85, 85.25, and 85,25. Reject negative/zero/three-decimal inputs and prevent rapid double-tap duplicate entries.
-- Check all type/category combinations. Merchant selection starts empty and never silently changes category. Save resets amount/merchant/description/payment/date override while preserving category.
+- Check all type/category combinations. Merchant selection starts empty; selecting a compatible default applies it, and a later manual category choice wins. Save resets amount/merchant/description/payment/date override while preserving category.
 - Change category, switch type and back, navigate away/back, relaunch; verify per-type selections.
 - Set an entry just before midnight on the last day of a month. Verify daily grouping and Home month totals; test a refund in the following month. Change device timezone and confirm reporting days remain unchanged.
 - Check expense 100, income 50, refund 120: gross 100, net spending -20, cash flow 70 (all MXN).
@@ -24,7 +24,7 @@ The automated report is in TEST_REPORT.md. Use a deployed production build for t
 ## Management and accessibility
 
 - Add, rename, archive/unarchive categories and merchants. History must preserve references. Try case/spacing duplicate merchant names, including archived names. Other cannot be archived/renamed.
-- Select a merchant default of the opposite type; no invalid suggestion should appear. Inspect merchant-filtered history.
+- Select a merchant default of the opposite type; the current category should remain unchanged. Inspect merchant-filtered history.
 - Select system/light/dark, change OS appearance while open, and relaunch. Settings preference and proper system following must persist.
 - Test widths 320, 375, 390, 430 pixels, desktop width, and landscape. Check the four-column grid, long names, large amounts, date inputs, and no horizontal overflow.
 - With keyboard open, scroll to optional fields and Save; ensure tab bar and safe areas do not block controls. Test hardware keyboard focus, dialog close/Escape, screen reader labels, 200% text zoom, and reduced motion.
@@ -78,7 +78,7 @@ The automated report is in TEST_REPORT.md. Use a deployed production build for t
 
 ### JSON and recurrence after restoration
 
-- Make a disposable database with ordinary entries, linked refunds, budgets, archived entities, schedules, one deleted occurrence, one paused/skipped date and an imported/deleted manual entry. Save complete JSON to Files, then press “I saved this backup.” Inspect all nine store arrays.
+- Make a disposable database with ordinary entries, linked refunds, budgets, archived entities, schedules, one deleted occurrence, one paused/skipped date and an imported/deleted manual entry. Save complete JSON to Files, then press “I saved this backup.” Inspect all ten store arrays.
 - Replace another disposable profile after validation/preview/acknowledgement. Verify original IDs/relationships/preferences/metadata/cursors/receipts. Reopen offline: due new dates should appear once; deleted/skipped dates must not return.
 - Resume a restored paused schedule and verify its documented skip/resume-day behavior. Edit/delete generated entries without changing the schedule.
 - Attempt corrupt JSON, missing stores/relationships, duplicate IDs, mismatched generated/deleted receipts, invalid currency/date/cursor and future format. Destination data must remain untouched.
@@ -91,3 +91,15 @@ The automated report is in TEST_REPORT.md. Use a deployed production build for t
 - On widths 320/375/390/430, landscape and text zoom: mapping controls, long validation messages, file input, preview table scrolling, confirmation controls and tab safe areas must remain usable.
 - Keyboard-only/VoiceOver: skip link, dialog name/focus return, native selectors, preview caption/status/row headings, error and confirmation states, chart alternative controls. Confirm keyboard viewport handling never blocks saving/navigation after dismissal.
 - Actually verify the Files download exists before acknowledging save. Download/picker UI varies by iOS version; this delivery does not claim that cycle was tested.
+
+## Ledger 1.1 acceptance — pending on real iPhone / Safari
+
+The user reports v1.0 was installed/tested successfully on an iPhone; this does not certify the update. The cloud browser could not reach this container's loopback preview (`ERR_CONNECTION_REFUSED`). DOM tests verify order/interaction but not actual layout/scrolling.
+
+- Upgrade the existing Home Screen app at its unchanged URL via the existing update prompt. Verify schema-3 records, dark/system preferences, schedule skips/deletions and budgets survive. Do not clear storage/reinstall.
+- At 320/375/390/430 px widths in both themes, compare the approved typography, navigation, category grid, type/amount controls and spacing. Scroll normally through merchant → category → description → payment → date/time/refund link → Save; verify keyboard and safe-area behavior.
+- Select a method, None, Other without custom text, and Other with a custom label. Save and check reset. Add/rename/archive/unarchive in Settings; historical text must stay recorded.
+- Open an edited transaction with a category override: opening must not change it. Change merchants with valid, missing, archived or incompatible defaults. Verify automatic selection only for a valid explicit merchant change; override manually and save.
+- Combine History payment/type/category/merchant/date/amount/search filters; check legacy mixed-case/whitespace labels, referenced archives, custom labels and Unspecified.
+- Save JSON, restore on a disposable profile, inspect new metadata and every occurrence receipt/cursor. Export/import CSV/XLSX and inspect payment columns in Numbers/Excel.
+- Confirm Ready offline, then close/reopen in airplane mode (Wi-Fi off), record/edit a disposable entry, access payment management/filtering and data tools. Restore connectivity and verify the worker-update prompt without losing unfinished input.

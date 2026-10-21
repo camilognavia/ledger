@@ -1,5 +1,7 @@
 import { unwrap, openDB, type DBSchema, type IDBPDatabase } from "idb";
 import {
+  initialPaymentMethods,
+  type PaymentMethod,
   categoryKind,
   defaultPreferences,
   initialCategories,
@@ -15,9 +17,14 @@ import {
   type Snapshot,
   type Transaction,
 } from "./model";
-export const DATABASE_VERSION = 3;
+export const DATABASE_VERSION = 4;
 export const DATABASE_NAME = "ledger";
 export interface LedgerSchema extends DBSchema {
+  paymentMethods: {
+    key: string;
+    value: PaymentMethod;
+    indexes: { "by-name": string };
+  };
   imports: {
     key: string;
     value: ImportReceipt;
@@ -86,6 +93,37 @@ export async function openLedger(name = DATABASE_NAME) {
         store.createIndex("by-source", "sourceId");
         unwrap(tx).objectStore("metadata").put({ id: "schema", value: 3 });
       }
+      if (oldVersion < 4) {
+        const store = db.createObjectStore("paymentMethods", { keyPath: "id" });
+        store.createIndex("by-name", "normalizedName", { unique: true });
+        for (const method of initialPaymentMethods) store.put(method);
+        // Populate choices from old text without rewriting a single financial row.
+        const known = new Set(
+          initialPaymentMethods.map((m) => m.normalizedName),
+        );
+        const native = unwrap(tx);
+        for (const table of ["transactions", "schedules"] as const) {
+          const request = native.objectStore(table).getAll();
+          request.onsuccess = () => {
+            for (const row of request.result as { paymentMethod: string }[]) {
+              const name = row.paymentMethod.trim().replace(/\s+/g, " ");
+              const normalizedName = normalizeName(name);
+              if (normalizedName && !known.has(normalizedName)) {
+                known.add(normalizedName);
+                native.objectStore("paymentMethods").put({
+                  id: `legacy:${name}`,
+                  name,
+                  normalizedName,
+                  archived: false,
+                });
+              }
+            }
+          };
+        }
+      }
+      unwrap(tx)
+        .objectStore("metadata")
+        .put({ id: "schema", value: DATABASE_VERSION });
     },
     blocking() {
       db.close();
@@ -124,21 +162,31 @@ export async function snapshot(db: LedgerDB): Promise<Snapshot> {
     "preferences",
     "schedules",
     "budgets",
+    "paymentMethods",
   ]);
   void tx.done.catch(() => {});
-  const [transactions, categories, merchants, preferences, schedules, budgets] =
-    await Promise.all([
-      tx.objectStore("transactions").getAll(),
-      tx.objectStore("categories").getAll(),
-      tx.objectStore("merchants").getAll(),
-      tx.objectStore("preferences").get("user"),
-      tx.objectStore("schedules").getAll(),
-      tx.objectStore("budgets").getAll(),
-    ]);
+  const [
+    transactions,
+    categories,
+    merchants,
+    preferences,
+    schedules,
+    budgets,
+    paymentMethods,
+  ] = await Promise.all([
+    tx.objectStore("transactions").getAll(),
+    tx.objectStore("categories").getAll(),
+    tx.objectStore("merchants").getAll(),
+    tx.objectStore("preferences").get("user"),
+    tx.objectStore("schedules").getAll(),
+    tx.objectStore("budgets").getAll(),
+    tx.objectStore("paymentMethods").getAll(),
+  ]);
   await tx.done;
   if (!preferences)
     throw new Error("Preferences are missing. Please reopen Ledger.");
   return {
+    paymentMethods,
     transactions,
     categories,
     merchants,
@@ -373,4 +421,23 @@ export async function saveBackupPreference(
   if (!p) throw new Error("Preferences are missing.");
   await tx.store.put({ ...p, ...patch });
   await tx.done;
+}
+
+export async function savePaymentMethod(db: LedgerDB, method: PaymentMethod) {
+  const name = method.name.trim().replace(/\s+/g, " ");
+  if (!name || name.length > 80 || name.includes("\0"))
+    throw new Error("Use a payment method name of 1–80 characters.");
+  try {
+    await db.put("paymentMethods", {
+      ...method,
+      name,
+      normalizedName: normalizeName(name),
+    });
+  } catch (error) {
+    if ((error as DOMException).name === "ConstraintError")
+      throw new Error(
+        "This payment method already exists, including archived methods.",
+      );
+    throw error;
+  }
 }

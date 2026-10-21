@@ -37,7 +37,6 @@ describe("everyday entry and navigation", () => {
     const view = await start();
     await user.click(screen.getByRole("button", { name: "Groceries" }));
     await user.type(screen.getByRole("textbox", { name: "Amount" }), "85.25");
-    await user.click(screen.getByText("More details"));
     await user.selectOptions(screen.getByLabelText("Merchant / payee"), "cafe");
     await user.type(screen.getByLabelText("Description"), "Coffee");
     await user.dblClick(
@@ -77,7 +76,7 @@ describe("everyday entry and navigation", () => {
     await user.click(screen.getByRole("button", { name: "Refund" }));
     expect(screen.getByRole("button", { name: "Groceries" })).toBeVisible();
   });
-  it("never silently overrides category for a merchant default", async () => {
+  it("applies merchant default and allows a manual category override", async () => {
     const user = userEvent.setup();
     await saveMerchant(db, {
       id: "cafe",
@@ -87,18 +86,15 @@ describe("everyday entry and navigation", () => {
       defaultCategoryId: "expense-1",
     });
     await start();
-    await user.click(screen.getByText("More details"));
     await user.selectOptions(screen.getByLabelText("Merchant / payee"), "cafe");
-    expect(
-      screen.getByRole("button", { name: "Food & Drinks" }),
-    ).toHaveAttribute("aria-pressed", "true");
-    await user.click(
-      screen.getByRole("button", { name: "Use Groceries for Cafe" }),
-    );
     expect(screen.getByRole("button", { name: "Groceries" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
+    await user.click(screen.getByRole("button", { name: "Food & Drinks" }));
+    expect(
+      screen.getByRole("button", { name: "Food & Drinks" }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
   it("edits and deletes through history with confirmation", async () => {
     const user = userEvent.setup();
@@ -209,7 +205,6 @@ describe("additional integrity workflows", () => {
     const user = userEvent.setup();
     await start();
     await user.type(screen.getByLabelText("Amount"), "75");
-    await user.click(screen.getByText("More details"));
     await user.type(screen.getByLabelText("Description"), "Do not lose this");
     const c = (await db.get("categories", "expense-0"))!;
     await db.put("categories", { ...c, archived: true });

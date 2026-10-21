@@ -199,12 +199,12 @@ describe("complete backup and atomic restore", () => {
     delete legacy.data.imports;
     delete legacy.data.preferences[0].summaryMode;
     const validated = validateBackup(legacy);
-    expect(validated.databaseVersion).toBe(3);
+    expect(validated.databaseVersion).toBe(4);
     expect(validated.data.transactions[0].id).toBe("v1-record");
     expect(validated.data.preferences[0].summaryMode).toBe("basic");
     expect(validated.data.imports).toEqual([]);
   });
-  it("migrates an actual schema-2 database with tombstones/cursors to schema 3 without reseeding", async () => {
+  it("migrates an actual schema-2 database with tombstones/cursors to schema 4 without reseeding", async () => {
     const source = await fresh();
     await richDatabase(source);
     const b = await captureBackup(source);
@@ -212,7 +212,9 @@ describe("complete backup and atomic restore", () => {
     extraNames.push(name);
     const old = await openDB(name, 2, {
       upgrade(db) {
-        for (const s of ALL_STORES.filter((s) => s !== "imports")) {
+        for (const s of ALL_STORES.filter(
+          (s) => s !== "imports" && s !== "paymentMethods",
+        )) {
           const store = db.createObjectStore(s, { keyPath: "id" });
           if (s === "transactions") {
             store.createIndex("by-date", "localDate");
@@ -229,7 +231,9 @@ describe("complete backup and atomic restore", () => {
         }
       },
     });
-    for (const store of ALL_STORES.filter((s) => s !== "imports"))
+    for (const store of ALL_STORES.filter(
+      (s) => s !== "imports" && s !== "paymentMethods",
+    ))
       for (const r of b.data[store])
         await old.put(store, r.id === "schema" ? { ...r, value: 2 } : r);
     old.close();

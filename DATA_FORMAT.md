@@ -45,7 +45,7 @@ Root shape:
 {
   "format": "ledger-backup",
   "formatVersion": 1,
-  "databaseVersion": 3,
+  "databaseVersion": 4,
   "exportedAt": "2026-10-19T06:00:00.000Z",
   "data": {
     "transactions": [],
@@ -56,7 +56,8 @@ Root shape:
     "schedules": [],
     "occurrences": [],
     "budgets": [],
-    "imports": []
+    "imports": [],
+    "paymentMethods": []
   }
 }
 ```
@@ -71,19 +72,19 @@ JSON omits optional properties whose stored value is `undefined`; their absence 
 
 The entire file is checked: format and schema versions, known store/record fields, required arrays/fields, duplicate IDs/names, value types, integer money/ranges, Gregorian dates and time strings, supported settings, fallback categories, all financial/category/merchant/refund relationships, budget relationships, normalized merchant uniqueness, import provenance, occurrence keys and generated-entry/receipt pairs. Deleted/skipped occurrences cannot have live entries. Active schedule cursors cannot precede retained receipts. Deleted schedules may legitimately leave orphan provenance IDs; deleted imports may leave receipts without live financial rows.
 
-Backup local times are validated as wall-clock strings without reinterpreting them in the destination timezone. This preserves records created in another timezone, including daylight-saving cases. Unknown future versions/stores/fields are rejected to avoid silently dropping data. Supported old schema-1/2 shapes are normalized into schema 3 without changing IDs; this format did not exist in the original checkpoints, but the compatibility path is tested.
+Backup local times are validated as wall-clock strings without reinterpreting them in the destination timezone. This preserves records created in another timezone, including daylight-saving cases. Unknown future versions/stores/fields are rejected to avoid silently dropping data. Supported schema-1/2/3 shapes normalize into schema 4 without changing existing IDs or financial text. If payment metadata is absent from an older backup, the five defaults and distinct legacy transaction/schedule labels supply choices. Schema 4 requires its paymentMethods array; malformed, unknown-field, nonboolean, duplicate-ID/name or incorrectly normalized records are rejected before writes.
 
 Validation detects structural/referential corruption; it does not authenticate the author or detect every intentional, internally consistent financial edit. JSON is unencrypted and has no signature. Keep backups in a location you control.
 
 ### Replace
 
-After validation and preview, check the acknowledgement and click **Confirm replace restore**. All nine stores are cleared and repopulated in **one IndexedDB transaction**, including preferences and metadata. Clearing and writes roll back together on failure. Concurrent/stale changes invalidate the preview before any clearing.
+After validation and preview, check the acknowledgement and click **Confirm replace restore**. All ten stores are cleared and repopulated in **one IndexedDB transaction**, including preferences and metadata. Clearing and writes roll back together on failure. Concurrent/stale changes invalidate the preview before any clearing.
 
 Replacement returns to the snapshot, including its saved/deleted/skipped history. Changes made **after** the snapshot are intentionally undone; an older backup can therefore restore a transaction deleted later. Save a fresh backup of the current device before replacing it.
 
 ### Merge
 
-Merge unions compatible IDs without remapping. Identical records are retained once. Existing preferences and metadata stay current; new compatible categories, merchants, transactions, schedules, receipts, budgets and import provenance are added.
+Merge unions compatible IDs without remapping. Identical records are retained once. Existing preferences and metadata stay current; new compatible payment methods, categories, merchants, transactions, schedules, receipts, budgets and import provenance are added.
 
 Any differing same-ID record, including a newer schedule cursor or a generated/deleted occurrence disagreement, blocks the **entire** merge. Duplicate normalized entities with different IDs also fail validation. There is no last-write-wins conflict resolution. A local recurring deletion cannot be silently overwritten by a generated entry from an older backup. Resolve the source discrepancy, restore to a separate device/profile, or deliberately choose Replace after saving current data.
 
@@ -96,3 +97,11 @@ The current screen refreshes and old session notifications are cleared. Reopen/r
 CSV/XLSX: 10 MiB, 50,000 data rows, 80 columns. JSON: 50 MiB and 1,000,000 total records, with matching download/restore bounds; no partial backup is emitted over the limit. Workbook parsing and full snapshots use memory and maximum-size performance is unprofiled. Sparse-formatting-heavy, encrypted, malformed or unsupported workbooks may be rejected.
 
 Browser downloads/file pickers, storage quota, eviction, and actual atomic crash durability need real-device acceptance. Ledger's tests verify transaction rollback with simulated storage failures; they do not certify a particular iOS filesystem. Keep the same app origin/path during updates and close other Ledger windows before restoring.
+
+## Payment methods in Ledger 1.1
+
+`paymentMethods` records contain `{id, name, normalizedName, archived}`. Names are 1–80 characters; normalized names use the existing NFKC, trimmed/collapsed whitespace, lowercase rule and remain unique across active/archived choices. IDs stay stable during management. Old legacy labels are collected into choices during the schema-4 upgrade without changing any financial row. All ten stores, including these choices, participate in backup capture, restore/merge validation, stale-preview checks and atomic writes.
+
+Transactions and recurring schedules retain `paymentMethod: string`, including the empty string for unspecified. No new financial foreign key or occurrence identity is introduced. Renames affect future choices; recorded historical labels and existing schedule terms remain as saved. Schedule editing explicitly changes future terms under the established reconciliation rules. History filters the recorded label, normalizing only for matching/options; it never rewrites records. Old and renamed labels may therefore appear separately in filters when both occur. Referenced archived labels remain available. Other is always the custom-entry action, even if the similarly named managed choice is renamed/archived.
+
+CSV/XLSX columns, numeric amounts and duplicate fingerprints are unchanged. Payment cells contain the recorded string, not a registry ID or renamed substitute. Imports retain those strings (under the existing import whitespace rules), append manual rows and never create/change recurrence identities. Imported/custom labels remain filterable; add a reusable dropdown choice in Settings if desired. JSON is required to move the managed choice list itself. Existing complete backups from v1.0 restore with payment strings intact; v1.0 cannot read schema-4 backups.

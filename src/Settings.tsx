@@ -1,7 +1,9 @@
+import { savePaymentMethod } from "./db";
 import { lazy, Suspense, useState } from "react";
 import { ArrowLeft, ChevronRight, Plus } from "lucide-react";
 import {
   icons,
+  type PaymentMethod,
   type Budget,
   type RecurringSchedule,
   type Category,
@@ -48,6 +50,7 @@ export function Settings({
   onDeleteSchedule: (id: string) => Promise<boolean>;
 }) {
   const [section, setSection] = useState<
+    | "payments"
     | "main"
     | "categories"
     | "merchants"
@@ -56,6 +59,8 @@ export function Settings({
     | "recurring"
     | "transfer"
   >("main");
+  const [payment, setPayment] = useState<PaymentMethod>();
+  const [paymentError, setPaymentError] = useState("");
   const [category, setCategory] = useState<Category>();
   const [merchant, setMerchant] = useState<Merchant>();
   const [query, setQuery] = useState("");
@@ -86,21 +91,25 @@ export function Settings({
       )}
       <div className="page-heading">
         <div>
-          <p className="eyebrow">MAKE IT YOURS</p>
+          <p className="eyebrow" aria-hidden="true">
+            &nbsp;
+          </p>
           <h1>
             {section === "main"
               ? "Settings"
-              : section === "categories"
-                ? "Categories"
-                : section === "merchants"
-                  ? "Merchants"
-                  : section === "budgets"
-                    ? "Budgets"
-                    : section === "recurring"
-                      ? "Recurring transactions"
-                      : section === "transfer"
-                        ? "Data & backups"
-                        : "About Ledger"}
+              : section === "payments"
+                ? "Payment methods"
+                : section === "categories"
+                  ? "Categories"
+                  : section === "merchants"
+                    ? "Merchants"
+                    : section === "budgets"
+                      ? "Budgets"
+                      : section === "recurring"
+                        ? "Recurring transactions"
+                        : section === "transfer"
+                          ? "Data & backups"
+                          : "About Ledger"}
           </h1>
         </div>
       </div>
@@ -108,7 +117,9 @@ export function Settings({
         <>
           <section className="settings-section">
             <h2>Appearance</h2>
-            <p className="hint">A little light. A little dark. Your choice.</p>
+            <p className="hint" aria-hidden="true">
+              &nbsp;
+            </p>
             <div className="segmented">
               {(["system", "light", "dark"] as const).map((a) => (
                 <button
@@ -127,6 +138,7 @@ export function Settings({
               [
                 "categories",
                 "merchants",
+                "payments",
                 "recurring",
                 "budgets",
                 "transfer",
@@ -139,24 +151,126 @@ export function Settings({
                 onClick={() => setSection(s)}
               >
                 <span>
-                  {s === "about"
-                    ? "Storage & installation"
-                    : s === "recurring"
-                      ? "Recurring transactions"
-                      : s === "transfer"
-                        ? "Data & backups"
-                        : s[0].toUpperCase() + s.slice(1)}
+                  {s === "payments"
+                    ? "Payment methods"
+                    : s === "about"
+                      ? "Storage & installation"
+                      : s === "recurring"
+                        ? "Recurring transactions"
+                        : s === "transfer"
+                          ? "Data & backups"
+                          : s[0].toUpperCase() + s.slice(1)}
                 </span>
                 <ChevronRight size={18} />
               </button>
             ))}
           </section>
           <p className="hint version">
-            Ledger · Checkpoint 3 · v1.0.0
+            Ledger · v1.1.0
             <br />
-            Local by design. No account required.
+            &nbsp;
           </p>
         </>
+      )}
+      {section === "payments" && (
+        <>
+          <p className="hint">
+            Renaming changes future choices. Existing entries keep their
+            recorded payment label. Archive to hide a method from new entries.
+          </p>
+          <button
+            className="secondary wide"
+            onClick={() => {
+              setPaymentError("");
+              setPayment({
+                id: crypto.randomUUID(),
+                name: "",
+                normalizedName: "",
+                archived: false,
+              });
+            }}
+          >
+            <Plus size={16} /> Add payment method
+          </button>
+          <section className="settings-section">
+            {data.paymentMethods.map((method) => (
+              <button
+                className="entity-row"
+                key={method.id}
+                onClick={() => {
+                  setPaymentError("");
+                  setPayment({ ...method });
+                }}
+              >
+                <span>
+                  {method.name}
+                  <small>{method.archived ? "Archived" : ""}</small>
+                </span>
+                <ChevronRight size={16} />
+              </button>
+            ))}
+          </section>
+        </>
+      )}
+      {payment && (
+        <Modal
+          title={
+            data.paymentMethods.some((m) => m.id === payment.id)
+              ? "Edit payment method"
+              : "New payment method"
+          }
+          onClose={() => setPayment(undefined)}
+        >
+          <form
+            className="optional-fields"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (busy) return;
+              setBusy(true);
+              setPaymentError("");
+              try {
+                await savePaymentMethod(db, payment);
+                await onDataChanged();
+                setPayment(undefined);
+              } catch (error) {
+                setPaymentError((error as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <label>
+              Name
+              <input
+                autoFocus
+                required
+                maxLength={80}
+                value={payment.name}
+                onChange={(e) =>
+                  setPayment({ ...payment, name: e.target.value })
+                }
+              />
+            </label>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={payment.archived}
+                onChange={(e) =>
+                  setPayment({ ...payment, archived: e.target.checked })
+                }
+              />
+              Archived (hide from new entries)
+            </label>
+            {paymentError && (
+              <p role="alert" className="error">
+                {paymentError}
+              </p>
+            )}
+            <button className="primary" disabled={busy}>
+              Save payment method
+            </button>
+          </form>
+        </Modal>
       )}
       {section === "transfer" && (
         <Suspense fallback={<p role="status">Opening data tools…</p>}>
@@ -230,8 +344,8 @@ export function Settings({
       {section === "merchants" && (
         <>
           <p className="hint">
-            A shared address book for expenses, income, and refunds. Categories
-            are suggested only when you ask.
+            Selecting a merchant applies its default category. You can change
+            it.
           </p>
           <input
             aria-label="Search saved merchants"

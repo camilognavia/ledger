@@ -70,7 +70,9 @@ export function Summary({
     <>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">ROOM TO SEE THE BIG PICTURE</p>
+          <p className="eyebrow" aria-hidden="true">
+            &nbsp;
+          </p>
           <h1>Your ledger</h1>
         </div>
       </div>

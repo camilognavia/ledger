@@ -1,8 +1,8 @@
-# Ledger — Checkpoint 3
+# Ledger 1.1
 
-**Version 1.0.0 · IndexedDB schema 3.** An installable, offline-first personal finance PWA for iPhone, Windows and Linux browsers. Built directly on the delivered Checkpoint 2 source. MXN, local data, no account/backend/subscription or remote application assets.
+**Version 1.1.0 · IndexedDB schema 4.** An installable, offline-first personal finance PWA for iPhone, Windows and Linux browsers. A targeted update built directly on the delivered Checkpoint 3 source, preserving its approved design. MXN, local data, no account/backend/subscription or remote application assets.
 
-All three implementation checkpoints are included: manual tracking and management; automatic recurrence, budgets and analysis; CSV/Excel transfer and complete versioned JSON backup/restore. Real iPhone/Safari and runtime offline acceptance remain unverified; see TEST_REPORT.md.
+All three implementation checkpoints are included: manual tracking and management; automatic recurrence, budgets and analysis; CSV/Excel transfer and complete versioned JSON backup/restore. The user reports successful installation/testing of v1.0 on an actual iPhone. This release has automated verification; its real iPhone/Safari and runtime offline acceptance remain unverified here. See TEST_REPORT.md.
 
 ## Windows / Linux development and production
 
@@ -39,7 +39,9 @@ The additive v1→v2→v3 migration retains old financial records, IDs, refund l
 ## Everyday tracking
 
 - Fresh launch opens **Add**; resume preserves unfinished input. Expense, Income and Refund use positive amounts and compatible category grids. Last category is remembered separately per type.
-- Optional merchant/payee, description, payment method, local date/time override and refund-original link are under **More details**. Merchant starts empty and default-category suggestions require a tap.
+- Entry keeps its existing type/amount controls, then shows merchant, category grid, description, payment method, date/time override and applicable refund-original link. Details stay visible. Merchant starts empty; explicitly selecting one applies a compatible active default category. You can override it. Opening an edit preserves the saved category.
+- Optional payment dropdown: Cash, Debit Card, Credit Card, Bank Transfer, Other/custom, plus active saved methods. Settings → Payment methods adds, renames or archives choices. Existing transactions/schedules retain their recorded text on rename/archive; this deliberately avoids rewriting history or recurring terms. Other always provides the custom-entry action.
+- History adds payment filtering, including referenced archived labels, legacy/custom values and Unspecified, combined with every existing filter. Case/whitespace-equivalent labels share one filter choice.
 - Successful saves clear amount/merchant/description/payment/date override, retain category, and stay on Add. Failed saves retain input; rapid repeated submission is guarded.
 - **History** groups by recorded local day, with net cash flow per filtered day. Search merchant names/descriptions; combine date/type/category/merchant/amount filters and chronological sorting. Inspect/edit or confirm deletion. Entries render 60 at a time. Deleting/changing an expense clears its refund links without deleting the refunds.
 - **Settings** adds/renames/archives/unarchives categories and merchants. Relationships remain stable; historical entries show current names. Other / Other Income stay available. Category kind is immutable. Merchant names are unique ignoring normalized case/spacing, including archived merchants.
@@ -69,12 +71,17 @@ Open **Settings → Data & backups**:
 
 Read **DATA_FORMAT.md** before transferring important records. JSON is the complete format; spreadsheets do not restore schedules, refund links, exact instants or deletion history. A historical replacement intentionally undoes changes made after the snapshot; save the current state first. Reopen/resume after restore to reconcile due dates from the restored cursors.
 
+## Upgrade to 1.1
+
+Use the **existing repository, GitHub Pages origin and app path**. Do not reinstall or clear storage. The additive schema 4 migration creates payment-method metadata and leaves all existing stores/financial records intact. Full steps: **INSTALL.md → Update an installed Ledger to 1.1**. JSON backups from schemas 1–3 remain supported. See CHANGELOG.md and DECISIONS.md for the targeted changes.
+
 ## Architecture and dependencies
 
 | Module | Responsibility |
 | --- | --- |
 | `src/model.ts`, `src/calendar.ts`, `src/finance.ts` | Domain, centavos, local Gregorian calendar, budgets and aggregation |
-| `src/db.ts` | Database opening, additive v1→v2→v3 upgrades, ordinary validated CRUD/preferences |
+| `src/db.ts` | Database opening, additive v1→v2→v3→v4 upgrades, ordinary validated CRUD/preferences |
+| `src/PaymentField.tsx` | Native payment dropdown/custom entry and normalized filter options |
 | `src/recurrence.ts` | Atomic exactly-once generation, receipts, prospective edits, pause policy |
 | `src/backup.ts` | Consistent all-store snapshot, strict versioned validation, merge planning, atomic restore |
 | `src/spreadsheets.ts` | Flat CSV, protected text, numeric Excel workbook, bounded file decoding |
@@ -91,9 +98,9 @@ Money is positive integer centavos; type controls the sign. Entry/limit maximum 
 
 ## Verification and practical limits
 
-**156 tests passed**, plus lint, explicit TypeScript, production build and static PWA validation. Additional Mexico City/New York runs verify transfer/restoration and DST calendar behavior. Full details, the optional dependency-audit advisory and the expected Excel chunk-size warning are in **TEST_REPORT.md**.
+**177 tests passed**, plus lint, explicit TypeScript, production build and static PWA validation. Additional Mexico City/New York runs verify transfer/restoration and DST calendar behavior. Full details, the optional dependency-audit advisory and the expected Excel chunk-size warning are in **TEST_REPORT.md**.
 
-No real browser, iPhone/Safari, mobile visual, or runtime offline test was available. jsdom/fake-indexeddb are simulations; MANUAL_QA.md lists the pending acceptance checks. No deployment occurred. The intended minimum iPhone target remains iOS/Safari 17+, subject to that testing.
+A cloud-browser preview was attempted but could not reach the container’s local server (ERR_CONNECTION_REFUSED). Mobile visual/scrolling, iPhone/Safari and runtime offline tests remain unverified for 1.1. jsdom/fake-indexeddb are simulations; MANUAL_QA.md lists the pending acceptance checks. No deployment occurred. The intended minimum iPhone target remains iOS/Safari 17+, subject to that testing.
 
 Files are processed locally and downloaded to the destination you choose. JSON is neither encrypted nor cryptographically authenticated. Browser eviction, website-data clearing, uninstalling, device loss or changing origin can remove access to records; keep independent backups. Safari and Home Screen storage may differ. There is no cross-device sync or Ledger encryption layer.
 

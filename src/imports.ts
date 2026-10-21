@@ -5,7 +5,7 @@ import {
   validateBackup,
   type BackupData,
 } from "./backup";
-import type { LedgerDB } from "./db";
+import { DATABASE_VERSION, type LedgerDB } from "./db";
 import {
   categoryKind,
   normalizeName,
@@ -361,7 +361,7 @@ export async function commitImport(db: LedgerDB, plan: ImportPlan) {
     validateBackup({
       format: "ledger-backup",
       formatVersion: 1,
-      databaseVersion: 3,
+      databaseVersion: DATABASE_VERSION,
       exportedAt: new Date().toISOString(),
       data: candidate,
     });

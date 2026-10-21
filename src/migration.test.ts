@@ -114,7 +114,7 @@ describe("non-destructive v1 → v2 migration", () => {
     });
     expect(await db.get("metadata", "schema")).toEqual({
       id: "schema",
-      value: 3,
+      value: 4,
     });
     expect(await reconcile(db, "2026-10-19")).toEqual([]);
     await saveTransaction(
@@ -155,7 +155,7 @@ describe("non-destructive v1 → v2 migration", () => {
     unchanged.close();
     const upgraded = await openLedger(name);
     connections.push(upgraded);
-    expect(upgraded.version).toBe(3);
+    expect(upgraded.version).toBe(4);
     expect(await upgraded.get("metadata", "custom")).toEqual({
       id: "custom",
       value: "retained",

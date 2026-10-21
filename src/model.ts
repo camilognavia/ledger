@@ -44,7 +44,14 @@ export interface Preferences {
   lastBackupAt?: number;
   backupReminderDismissedMonth?: string;
 }
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  normalizedName: string;
+  archived: boolean;
+}
 export interface Snapshot {
+  paymentMethods: PaymentMethod[];
   categories: Category[];
   merchants: Merchant[];
   transactions: Transaction[];
@@ -173,7 +180,20 @@ export function totals(rows: Transaction[]) {
 }
 export const normalizeName = (name: string) =>
   name.normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("en");
+export const initialPaymentMethods: PaymentMethod[] = [
+  "Cash",
+  "Debit Card",
+  "Credit Card",
+  "Bank Transfer",
+  "Other",
+].map((name, i) => ({
+  id: `payment-${i}`,
+  name,
+  normalizedName: normalizeName(name),
+  archived: false,
+}));
 export interface Filters {
+  paymentMethod: string;
   query: string;
   type: string;
   categoryId: string;
@@ -185,6 +205,7 @@ export interface Filters {
   order: "newest" | "oldest";
 }
 export const emptyFilters: Filters = {
+  paymentMethod: "",
   query: "",
   type: "",
   categoryId: "",
@@ -206,6 +227,10 @@ export function filterTransactions(
   return rows
     .filter(
       (t) =>
+        (!f.paymentMethod ||
+          (f.paymentMethod === "unspecified"
+            ? !normalizeName(t.paymentMethod)
+            : normalizeName(t.paymentMethod) === f.paymentMethod.slice(6))) &&
         (!f.type || t.type === f.type) &&
         (!f.categoryId || t.categoryId === f.categoryId) &&
         (!f.merchantId || t.merchantId === f.merchantId) &&

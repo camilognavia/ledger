@@ -1,3 +1,4 @@
+import { PaymentField } from "./PaymentField";
 import { useRef, useState } from "react";
 import { Plus, ChevronRight } from "lucide-react";
 import { Modal } from "./History";
@@ -433,16 +434,14 @@ export function ScheduleManager({
                 }
               />
             </label>
-            <label>
-              Schedule payment method
-              <input
-                value={draft.paymentMethod}
-                maxLength={80}
-                onChange={(e) =>
-                  setDraft({ ...draft, paymentMethod: e.target.value })
-                }
-              />
-            </label>
+            <PaymentField
+              label="Schedule payment method"
+              methods={data.paymentMethods}
+              value={draft.paymentMethod}
+              onChange={(paymentMethod) =>
+                setDraft({ ...draft, paymentMethod })
+              }
+            />
             <label>
               Frequency
               <select

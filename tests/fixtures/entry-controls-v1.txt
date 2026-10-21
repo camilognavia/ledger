@@ -1,0 +1,42 @@
+      <div className="segmented" aria-label="Transaction type">
+        {(["expense", "income", "refund"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            aria-pressed={type === t}
+            onClick={() => {
+              setType(t);
+              setCategoryId(
+                data.categories.find(
+                  (c) => c.id === selections.current[t] && !c.archived,
+                )?.id || chooseCategory(t),
+              );
+              setOriginalExpenseId("");
+            }}
+          >
+            {t[0].toUpperCase() + t.slice(1)}
+          </button>
+        ))}
+      </div>
+      <label
+        className="amount-label"
+        htmlFor={initial ? "edit-amount" : "amount"}
+      >
+        Amount <span>MXN</span>
+      </label>
+      <div className="amount-wrap">
+        <span aria-hidden="true">$</span>
+        <input
+          ref={amountRef}
+          id={initial ? "edit-amount" : "amount"}
+          autoFocus={!initial}
+          aria-label="Amount"
+          inputMode="decimal"
+          autoComplete="off"
+          placeholder="0.00"
+          value={amount}
+          maxLength={12}
+          onChange={(e) => setAmount(e.target.value)}
+          required
+        />
+      </div>

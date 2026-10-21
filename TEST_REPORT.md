@@ -1,86 +1,71 @@
-# Ledger Checkpoint 3 — final test report
+# Ledger 1.1 — test report
 
-**v1.0.0 · schema 3 · 2026-10-19.** Managed Linux container, Node 24.19.0, npm 11.9.0, TypeScript 5.9.x, Vite 7.3.7, Vitest 3.2.7. Exact dependencies are pinned in package-lock.json.
+**v1.1.0 · schema 4 · 2026-10-21 UTC.** Linux container; Node 24.19.0, npm 11.9.0, TypeScript 5.9.x, Vite 7.3.7, Vitest 3.2.7. Runtime/dev dependency versions and integrity entries are unchanged from Checkpoint 3; only the project version advances in the lockfile.
 
-## Baseline and continuation
+## Baseline and preservation
 
-30 source/tracking/package files matched the delivered Checkpoint 2 ZIP byte-for-byte before implementation. Its **94 tests**, lint, explicit TypeScript, production build and PWA validation passed first. The existing source/schema were extended directly. No recreation or destructive database reset occurred.
+All packaged non-dist source/configuration/documentation files matched `Ledger-Checkpoint-3.zip` before editing. Baseline **156/156 tests**, lint, explicit TypeScript, production build and PWA validation passed. No project recreation or database reset. The prior test report is retained in `tests/fixtures/test-report-v1.md`.
 
-## Final required checks
+The approved CSS is byte-for-byte unchanged: SHA256 `6ffd609730e71adab2d45fd06c0c780323bd61b29862d158c75cf83a17c1f339`. A regression test compares the original transaction-type/amount markup fixture byte-for-byte. The existing navigation, manifest identity/scope/base, icons/assets, GitHub Pages workflow and financial/calendar/recurrence engines remain unchanged. Source comparisons do not substitute for visual/device testing.
+
+## Required automated checks
 
 | Check | Result |
 | --- | --- |
-| `npm test` | **156/156 passed**, 11 files, no unhandled errors |
-| `npm run lint` | Passed, zero ESLint errors/warnings |
-| `npm run typecheck` | Passed, explicit strict TypeScript check |
-| `npm run build` | Passed, TypeScript/Vite/Workbox production build |
-| `npm run check:pwa` | Passed, manifest/scope/icons/HTML references/navigation fallback and every JS/CSS precache reference |
-| Mexico City transfer/backup/calendar/finance/recurrence/migration run | **101/101 passed** |
-| New York transfer/backup/calendar/recurrence run | **81/81 passed**, including 23-hour/25-hour DST timestamp gaps with stable recorded dates |
+| `npm test` | **177/177 passed**, 13 files, no unhandled errors |
+| `npm run lint` | Passed, no ESLint errors/warnings |
+| `npm run typecheck` | Passed |
+| `npm run build` | Passed, TypeScript/Vite/Workbox production output |
+| `npm run check:pwa` | Passed, standalone manifest/scope/icons/HTML/navigation fallback and all five JS/CSS assets in precache |
+| Mexico City regional suite | **116/116 passed**, 7 files |
+| New York regional suite | **96/96 passed**, 5 files |
 
-Timezone commands:
+Regional commands (Linux):
 
 ```sh
-TZ=America/Mexico_City npx vitest run src/backup.test.ts src/transfer.test.ts src/migration.test.ts src/recurrence.test.ts src/calendar.test.ts src/finance.test.ts
-TZ=America/New_York npx vitest run src/backup.test.ts src/transfer.test.ts src/recurrence.test.ts src/calendar.test.ts
+TZ=America/Mexico_City npm test -- src/calendar.test.ts src/finance.test.ts src/recurrence.test.ts src/migration.test.ts src/backup.test.ts src/transfer.test.ts src/payment.test.ts
+TZ=America/New_York npm test -- src/calendar.test.ts src/recurrence.test.ts src/backup.test.ts src/transfer.test.ts src/payment.test.ts
 ```
 
-These environment-variable commands were executed on Linux. The normal npm commands are documented for Windows; a Windows host was not available.
+## Focused new coverage
 
-## Coverage inventory
+`payment.test.ts` — **15 tests**:
 
-| Test file | Count | Verified behavior |
-| --- | ---: | --- |
-| `model.test.ts` | 21 | Original centavos/precision/range/overflow, finance types, local dates and filters |
-| `db.test.ts` | 11 | Original CRUD/persistence, duplicate submission, entity rename/archive, fallbacks, links, theme/category preferences and newer-version refusal |
-| `App.test.tsx` | 9 | Original Add-first/manual entry/reset/remount, types/suggestions/history/edit/delete/search/settings/error retention |
-| `calendar.test.ts` | 9 | Monthly 29–31, leap/common February, Feb 29 yearly return, century rules, day/week/year boundaries, inclusive ranges and seeking |
-| `finance.test.ts` | 15 | Budget income exclusion, automatic expenses, receipt-month/category refunds, excess refunds, exact 80/100 thresholds, reset/no carry, averages/rounding and trends |
-| `recurrence.test.ts` | 18 | Backfill/idempotence/reopen, independent-connection concurrency, deletion/cursor replay, edited identity, pause/resume, prospective changes, end/future dates, deletion retention, rollback, archives, backward clock and DST |
-| `migration.test.ts` | 5 | Original v1 retention/reopen, aborted upgrade rollback/retry, obsolete-client refusal, budget/mode persistence and invalid budget rejection; current target version is 3 |
-| `Checkpoint2.test.tsx` | 6 | Original auto launch/resume/listing/deletion retention, unfinished input, schedule UI lifecycle, nonblocking budget warnings/refunds/income, analytical controls/persistence/ranges |
-| `backup.test.ts` | 31 | Complete all-store JSON roundtrip/reopen; generated/deleted/skipped receipts, cursors, preferences, imports, metadata; recurrence after restore/replay/resume; invalid files; actual restore write rollback after clears; stale/tampered plans; strict/idempotent merge; deletion conflict; old-format normalization; actual v2→v3 migration; 22 corruption cases |
-| `transfer.test.ts` | 23 | Genuine numeric XLSX/PK ZIP, flat rows/summary totals, inclusive range exports, CSV escaping/Unicode/newlines, literal formula-looking strings, rejected formula/hyperlink cells, Excel date/time/centavos, mapping, no preview writes, duplicate/deleted-import detection, automatic exclusions/identity guards, invalid amounts/dates/types, stale/tampered plans, actual late import rollback, restored import receipts and deleted automatic-ID guard |
-| `DataTools.test.tsx` | 8 | File upload/mapping/preview/explicit commit, invalid file blocking, restore acknowledgement, merge conflict display, download request vs confirmed saved date, lazy Settings/reminder/dismissal, accessible dialog naming/skip link, reminder month persistence |
+- Add/rename/archive/reopen methods; normalized duplicate rejection includes archives. Original financial text remains unchanged.
+- Actual schema-3 IndexedDB-emulator fixture migrates all nine prior stores to schema 4 without reseeding/loss. Original rows, preferences, schedules, receipts/tombstones/skips/cursors, import provenance and budgets compare equal; recurrence stays idempotent.
+- All-store payment metadata backup roundtrip, strict idempotent merge, post-restore recurrence; schema-3 backup normalization derives choices without changing legacy strings.
+- Six corrupt payment-metadata cases (null, normalized duplicates, mismatch, nonboolean, missing store, unknown field) rejected before any destination write.
+- Deterministic normalized History options retain referenced archives/custom/legacy labels; combined type/category/merchant/range/amount/search predicates and Unspecified do not mutate rows.
+- Actual CSV/XLSX export/import after managed rename retains recorded payment labels, numeric amounts, manual-only identity and duplicate detection. Excel numeric cells inspected.
+- Approved CSS hash and original type/amount markup equality.
 
-The 94 original tests remain in the passing suite; schema assertions were advanced to 3. New backup fixtures contain manual expense/income/refund links, active and deleted schedules, generated/deleted/skipped receipts, processed cursors, budgets, import provenance, theme/summary/reminder settings and extra metadata. Both roundtrip equality and post-restore recurrence are exercised.
+`PaymentUI.test.tsx` — **6 tests**:
 
-Storage failure tests patch actual IndexedDB put/add calls to fail late in the **production restore/import functions**, then compare the complete destination state before/after. They verify rollback of already attempted clears, inserted entities and financial rows—not merely rejection during a read-only preview.
+- Always-visible field order, initially empty merchant/payment, initial choices, custom save/reset, including a custom name beginning with “Other”.
+- Other without custom text, configured Cash and Unspecified roundtrip.
+- Settings add/select/rename/archive workflow with historical label preservation and hidden archived new-entry choice.
+- Editing does not apply merchant defaults on mount; explicit merchant changes apply each compatible active default, with manual overrides and invalid/missing/archived/opposite-type defaults leaving category untouched.
+- Archived/legacy text remains selected and unchanged when editing.
+- Combined History control interactions; normalized duplicate options, archives, custom/unspecified values and record equality.
 
-Excel tests produce and decode actual XLSX bytes with ExcelJS, inspect numeric cell values, dates/times, sheet names, summaries and no merges. CSV tests cover quote/newline/Unicode/protected-text roundtrips. This does not substitute for opening the files in Microsoft Excel or iPhone Numbers; those desktop/device applications were unavailable.
+## Retained regression suite
 
-## Build and dependency notes
+All **156 previous tests remain**: model 21, database 11, App UI 9, calendar 9, finance 15, recurrence 18, migrations 5, Checkpoint 2 UI 6, complete backup 31, transfer 23, data tools/reminders/accessibility UI 8. No test was deleted or disabled. The superseded “More details” clicks/suggestion expectation and current-schema assertions were updated to the explicitly requested behavior/version. Historical schema fixtures still create their original stores.
 
-Main UI JS: about **301.81 kB / 93.14 kB gzip**. Data tools: about **50.96 kB / 17.64 kB gzip**. ExcelJS browser chunk: about **936.98 kB / 270.74 kB gzip**. CSS: about **15.58 kB / 3.95 kB gzip**. Workbox reports 16 precache entries / **1286.62 KiB**, including its usual duplicated icon listings. All transfer chunks are present in the precache; static checks cover their asset paths.
+Coverage retains transaction CRUD, integer centavos, separate income/refund accounting, receipt-month/category refund budgets, income exclusion, 80/100 warnings, excess refunds, monthly reset, monthly 29–31/leap/century edges, DST, independent-connection recurrence exactly once, deleted/skipped occurrence replay, edits/pause/resume, prospective schedules and launch/resume UI. Existing late write-failure tests prove restore/import rollback after clears/earlier writes; stale/tampered plans, strict merge conflicts, manual import identity guards and durable deleted-import receipts remain checked. New payment metadata participates in those same all-store transactions.
 
-Vite prints its generic >500 kB chunk warning for the already lazy ExcelJS browser bundle. This is an expected size warning, not a failed build; it was retained rather than hidden. No third-party network script is needed at runtime. Runtime license notices are included.
+## Production / PWA notes
 
-### Optional production dependency audit — advisory remains
+The build includes production `dist/`, manifest, icons, worker and lazy data/Excel chunks. CSS remains 15.58 kB; main UI JS about 305.6 kB; lazy ExcelJS about 937 kB. Precache is about 1.26 MiB (16 entries including normal repeated icon listings). The generic >500 kB warning for the existing lazy Excel bundle remains; it is not hidden or a failed build. No new dependency, remote asset or runtime network requirement was added.
 
-`npm audit --omit=dev --json` exits nonzero with **two moderate package entries (ExcelJS and transitive uuid), one underlying advisory; zero high/critical entries**. This is not a clean-audit result and was not counted as a passed check.
+The prior Checkpoint 3 audit reported two moderate package entries for one transitive ExcelJS/uuid advisory, no high/critical entries. Dependencies remain identical; no fresh network audit was performed for this small release and no clean-audit claim is made. The historical report retains its source/applicability assessment (ExcelJS no-buffer uuid v4 vs affected buffered v3/v5/v6 APIs). Upstream dependency maintenance remains a known limitation.
 
-[GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq) concerns bounds checking in uuid v3/v5/v6 APIs when supplied external output buffers; its v4 path is outside the affected methods. Local source inspection of ExcelJS 4.4.0 finds its uuid calls in conditional-format extensions use no-buffer `v4()`. Ledger's own financial/entity identifiers use `crypto.randomUUID()`.
+## Attempts and unverified acceptance
 
-This is an applicability assessment from the upstream advisory and installed source, **not** removal of upstream bundled code or a security certification. No major downgrade/override was applied merely to suppress the report. Upstream dependency maintenance remains a known limitation; the locked browser bundle is unchanged in that respect.
+- A production preview starts successfully with `npx vite preview --host 127.0.0.1 --port 4173`. The default wildcard-host preview encountered this container's `uv_interface_addresses` restriction; explicit loopback worked. The cloud Chrome browser was selected and navigation to that local URL was attempted, but returned **ERR_CONNECTION_REFUSED**: the remote browser cannot reach this container's loopback server. No public deployment/tunnel or unsupported browser installation was attempted.
+- **Mobile visual/scrolling:** unverified. DOM tests verify normal source order, accessible fields and interactions; jsdom does not render an iPhone-sized viewport or simulate real keyboard scrolling. No screenshot-based design equivalence claim.
+- **iPhone/Safari:** not tested for 1.1 by us. The user reports actual iPhone success for the prior release, which is distinct. Keyboard, safe areas, VoiceOver, native selects, focus and installed update acceptance remain in MANUAL_QA.md.
+- **Offline runtime/service-worker lifecycle:** static manifest/precache validation passed, but actual worker install, offline cold launch and update activation could not be tested in the inaccessible browser.
+- **OS/browser persistence and applications:** fake-indexeddb tests validate IDB transactions/migrations, not physical crash/eviction durability. No Windows host, Excel/Numbers GUI, GitHub Actions deployment run or maximum-size benchmark. Existing file limits, unencrypted backups and storage-retention caveats remain.
 
-## Findings resolved during implementation
-
-- Guarded all-store restore/import transactions against stale previews; no file parsing, dynamic module loads or other non-IDB awaits occur inside their write lifetime.
-- Added durable source/fingerprint import receipts, known deleted automatic-ID checks, and explicit exclusion of recurring spreadsheet identities.
-- Ensured stored local dates/times validate without destination-zone reinterpretation during JSON transfer.
-- Made rollback tests fail late enough to demonstrate recovery after clears/entity writes.
-- Added explicit dialog names/focus return, bounded semantic preview tables and a confirmed-save action instead of assuming a browser download was saved.
-- Sized backup output and input consistently; oversize output fails without producing an unusable partial backup.
-
-No known failing **required** automated check remains. The optional dependency audit and unperformed acceptance checks are reported separately.
-
-## Unavailable / not verified
-
-- **Real-browser and mobile visual tests:** browser capability availability was checked; the required supported controlled-browser surface was absent. No browser was installed/launched through an unsupported fallback. DOM tests do not render layout.
-- **Actual iPhone/Safari:** no phone, simulator or Safari engine. Home Screen installation, keyboard/visualViewport behavior, safe areas, VoiceOver, real focus trapping, system-theme changes and touch layouts remain manual acceptance.
-- **Runtime offline:** no actual worker installation, airplane-mode cold launch, download/file-picker cycle or worker-update lifecycle. Precache/manifest consistency is verified statically, not claimed as runtime offline proof.
-- **Real IndexedDB/OS durability:** tests use fake-indexeddb. Browser quota/eviction, power-loss durability, multi-process crash behavior and maximum-size performance were not certified.
-- **External applications/hosting:** no Windows host, Microsoft Excel, Apple Numbers, GitHub Actions or deployment run; no account registration/live URL. Free-deployment source/workflow and prebuilt dist are prepared.
-- **Broader assurance:** no formal accessibility audit, penetration test, cryptographic authentication of backups, or large-history/multi-decade backfill benchmark. File bounds and in-memory behavior are documented.
-
-MANUAL_QA.md records the remaining real-device checklist. These items are pending, never labeled passed.
+No known failing required automated check remains. Outstanding real-browser/device acceptance is explicitly pending, not reported as passed.

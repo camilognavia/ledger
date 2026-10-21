@@ -1,5 +1,44 @@
 # Ledger project progress
 
+## Current delivery — Ledger 1.1
+
+**v1.1.0 · IndexedDB `ledger`, schema 4 · 2026-10-21 UTC.** All four authorized usability refinements implemented. This is a direct extension of the delivered Checkpoint 3 source, not a recreation. Every archived source/package/document file matched Checkpoint 3 before editing (dist excluded from comparison because it was subsequently rebuilt). Baseline: 156 tests, lint, explicit TypeScript, production and PWA checks passed.
+
+### Completed
+
+- Optional managed payment dropdown with Cash, Debit Card, Credit Card, Bank Transfer, Other/custom, and saved choices. Settings supports add/rename/archive/unarchive using existing controls/dialog styling. Schedule editing reuses the field without changing recurrence logic.
+- Additive versionchange migration 3→4 creates paymentMethods plus its unique normalized-name index, seeds defaults and collects legacy transaction/schedule labels. Every original store and record is preserved; financial payment strings remain unchanged. No reset/reinstallation/origin/path change.
+- Merchant before category; all existing details remain visible in the approved order. Type/amount controls retain exact markup and behavior. Merchant defaults apply only on explicit selection, are type/archive checked, and can be manually overridden. Initial edits preserve saved categories. Post-save reset remains.
+- Quieted decorative copy with hidden blank line boxes preserving intentional whitespace. Existing CSS, themes, navigation, icons and chart styling are unchanged.
+- Combined History payment filtering for configured choices, referenced archives, custom/legacy values and Unspecified. Normalized case/whitespace options without mutations.
+- Complete backups include/validate payment metadata, preserving all occurrence receipts/tombstones/skips/cursors and import receipts. Schemas 1–3 normalize to schema 4. Atomic Replace/strict Merge and stale-preview safeguards remain. CSV/XLSX carry original payment strings and true numeric Excel amounts.
+- README, installation/upgrade guide, format documentation, decisions, changelog, test report and pending manual checklist updated. Complete source, tests, lockfile, production dist and original GitHub Pages workflow packaged.
+
+### Verification
+
+- **177/177 automated tests passed, 13 files** (156 retained/updated for approved requirements + 21 new focused tests). No test was removed. Previous suggestion/collapse expectations changed to the explicitly approved 1.1 interaction.
+- Lint, explicit TypeScript, production build and static PWA checks passed.
+- Mexico City: **116/116**; New York: **96/96**, covering recurrence/calendar/backup/transfer/payment compatibility and relevant migration/finance tests.
+- Actual schema-3 emulator migration compares all original stores and replays recurrence; schemas 1/2 regression tests remain. Backup corruption/rollback/roundtrip tests include the new store; real XLSX bytes and numeric cells tested.
+- Approved CSS SHA256 and byte-for-byte type/amount markup checked by automated regression test. Financial/calendar/recurrence engines and deployment workflow/configuration also compared to original source.
+
+### Known limitations / outstanding acceptance
+
+No known failing required automated check. No additional feature work remains authorized. Native browser rendering/scrolling, keyboard, VoiceOver and runtime offline/update acceptance remain pending: a loopback Vite preview ran, but the cloud browser returned ERR_CONNECTION_REFUSED because it could not reach the container. Actual iPhone/Safari 1.1 testing was not performed. The user's successful iPhone testing applies to the prior release, not this update.
+
+Financial rows deliberately retain recorded payment labels: rename changes future choices rather than relabeling history or existing schedules. Old labels can remain distinct filter options. Other remains the custom-entry action even if the similarly named managed choice is archived. Add imported/custom labels to Settings to make reusable choices. This is the documented minimal backward-compatible model.
+
+Existing personal-scale, browser eviction, unencrypted JSON, conservative imports/strict merges, no-background-execution and static-host limitations remain. Dependencies are unchanged; the historical ExcelJS/uuid moderate advisory assessment and expected lazy Excel chunk-size warning remain documented, not represented as resolved.
+
+### Next checkpoint
+
+**None. Stop after delivering Ledger 1.1.** Await explicit approval for any further development. Deploy through the existing repository/workflow at the same URL; INSTALL.md explains updating the existing installed PWA without reinstalling or clearing its IndexedDB.
+
+## Historical Checkpoint 3 progress record
+
+The following is the preserved prior delivery record; the current 1.1 section above supersedes its version, counts, merchant-suggestion behavior, storage-store count and acceptance status.
+
+
 ## Final delivered checkpoint
 
 **Checkpoint 3 completed · v1.0.0 · IndexedDB `ledger`, schema 3 · 2026-10-19.**

@@ -17,6 +17,7 @@ import {
 } from "./model";
 import { NoticeContext } from "./notices";
 import { CategoryIcon } from "./icons";
+import { paymentOptions } from "./PaymentField";
 import { TransactionForm } from "./TransactionForm";
 export function Modal({
   title,
@@ -112,7 +113,9 @@ export function History({
     <>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">THE EVERYDAY, RECORDED</p>
+          <p className="eyebrow" aria-hidden="true">
+            &nbsp;
+          </p>
           <h1>History</h1>
         </div>
         <span className="count">{results.length} entries</span>
@@ -188,6 +191,25 @@ export function History({
                 <option value={m.id} key={m.id}>
                   {m.name}
                   {m.archived ? " · archived" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Payment method
+            <select
+              value={filters.paymentMethod}
+              onChange={(e) => set("paymentMethod", e.target.value)}
+            >
+              <option value="">All payment methods</option>
+              <option value="unspecified">Unspecified</option>
+              {paymentOptions(
+                data.paymentMethods,
+                data.transactions.map((t) => t.paymentMethod),
+                true,
+              ).map(([key, name]) => (
+                <option key={key} value={`value:${key}`}>
+                  {name}
                 </option>
               ))}
             </select>

@@ -354,7 +354,9 @@ export default function App({
             <>
               <div className="page-heading">
                 <div>
-                  <p className="eyebrow">A LITTLE CLARITY, EVERY DAY</p>
+                  <p className="eyebrow" aria-hidden="true">
+                    &nbsp;
+                  </p>
                   <h1>Add transaction</h1>
                 </div>
                 <span className="date-label">

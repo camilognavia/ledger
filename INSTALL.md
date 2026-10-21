@@ -8,7 +8,7 @@
    ```sh
    git init
    git add .
-   git commit -m "Ledger checkpoint 3"
+   git commit -m "Ledger 1.1"
    git branch -M main
    git remote add origin https://github.com/YOUR-USERNAME/ledger.git
    git push -u origin main
@@ -40,20 +40,26 @@ No Apple Developer account, App Store submission, Mac, push permission, or subsc
 
 ## Keep your data available
 
-Keep the same HTTPS **origin** (scheme + hostname + port) for future checkpoints. A new origin has a different IndexedDB and will appear empty. Path changes on the same origin may affect service-worker installation; keep the same app path too. Desktop development and production preview use different ports and therefore different databases.
+Keep the same HTTPS **origin** (scheme + hostname + port) for future updates. A new origin has a different IndexedDB and will appear empty. Path changes on the same origin may affect service-worker installation; keep the same app path too. Desktop development and production preview use different ports and therefore different databases.
 
 Do not clear website data or uninstall the Home Screen app to fix a display/update problem. Try closing other Ledger windows and reloading first. Browser storage can be evicted despite a persistence request. Save regular complete JSON backups in Settings → Data & backups and keep independent copies. The app does not encrypt the database itself.
 
 For mobile checks beyond basic installation, use [MANUAL_QA.md](MANUAL_QA.md). No actual iPhone installation or Safari test has been performed for this delivery.
 
 
-## Update Checkpoint 1 or 2 to Checkpoint 3
+## Update an installed Ledger to 1.1
 
-Keep the existing HTTPS origin and app path. Deploy the new `dist/` contents, preserving filenames/subdirectories. Finish an unsaved entry before choosing Settings → Storage & installation → Install update & reload. Close other Ledger windows if asked; they may hold an old database connection.
+1. Keep using your **existing GitHub repository, Pages origin and app path**. Before deployment, save a complete JSON backup from the installed app and keep that file independently.
+2. Extract `Ledger-1.1.zip`. Copy the contents of `ledger/` into your existing repository checkout, including `.github/workflows/deploy.yml`, source and lockfile. Do not put private backup files or `node_modules` in Git. Do not create a new repository, rename it, change the Pages URL, change the relative Vite base/manifest scope, or create another Home Screen installation.
+3. Review, commit and push the update to the existing `main` branch, for example `git add .` → `git commit -m "Ledger 1.1"` → `git push`. The unchanged **Deploy Ledger to GitHub Pages** workflow tests/lints, builds, validates the PWA and deploys `dist/`. A separate workflow run or deployment was not performed here. If you deploy static files manually instead, replace the complete deployed `dist/` contents and preserve its paths/subdirectories.
+4. Open the **existing installed Ledger** online. Finish any unsaved entry. When the update is available, use **Settings → Storage & installation → Install update & reload**. Close other Ledger windows if they block the database upgrade. If the prompt has not appeared, close/reopen the installed app online and check Settings again; do not uninstall or clear website data.
+5. Confirm **Ledger · v1.1.0** in Settings. Check existing History, schedules, budget status and appearance, and then save a new complete JSON backup. Verify an offline cold launch on the phone before relying on the update away from connectivity.
 
-Opening this release upgrades schema 1→2→3 automatically. It retains all existing financial rows, categories, merchants, IDs, timestamps, refund links, preferences, schedules, occurrence receipts/tombstones, cursors and budgets. Schema 3 adds an import receipt store; backup reminders default off. It does not clear/reseed an initialized database.
+Opening 1.1 automatically upgrades IndexedDB `ledger` to **schema 4** in an atomic versionchange transaction. It adds only the `paymentMethods` store and its unique normalized-name index, seeds the five initial choices, and collects distinct legacy payment labels from existing transactions/schedules. It advances the schema marker. Every existing transaction, free-text payment value, category, merchant, preference, schedule, occurrence receipt/tombstone/skip, cursor, budget and import receipt remains untouched. Earlier schemas upgrade through their existing migrations first. The origin/path, PWA identity, worker scope and update prompt are unchanged.
 
-Do not uninstall, clear website data, change origin or delete the database to upgrade. Old builds intentionally refuse newer database versions. After upgrading, inspect existing records in History, then download a complete JSON backup from Settings → Data & backups. A CSV/XLSX export is useful for analysis but does not preserve the complete application state.
+Managed methods have stable IDs, but financial rows deliberately continue to store their original payment text. Rename changes future dropdown choices; it does not relabel past transactions or modify existing recurring schedules. Archived choices disappear from new entry while referenced labels remain visible/editable/filterable. Other remains the optional custom-entry action. Editing a schedule can explicitly change its future payment label using the same dropdown.
+
+Do not uninstall, clear storage, delete IndexedDB or reinstall to upgrade. Old application builds cannot open schema 4: do not roll back to v1.0 on a device already migrated. JSON schemas 1–3 normalize safely during restoration; schema-4 backups require Ledger 1.1 or later. Strict merge rejects conflicting payment-method metadata just as it rejects conflicting entities; it never silently renames or overwrites records.
 
 ## Save and restore on iPhone
 
