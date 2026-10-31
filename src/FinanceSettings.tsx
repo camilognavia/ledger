@@ -10,6 +10,7 @@ import {
   parseMoney,
   type Budget,
   type RecurringSchedule,
+  requirePaymentMethod,
   type Snapshot,
 } from "./model";
 import { budgetUsage } from "./finance";
@@ -282,6 +283,12 @@ export function ScheduleManager({
             <span>
               {s.name}
               <small>
+                {!s.paymentMethod.trim() && (
+                  <>
+                    Payment method required · entries held
+                    <br />
+                  </>
+                )}
                 {s.frequency} · {s.type} · {money(s.amount)} ·{" "}
                 {s.paused
                   ? "Paused"
@@ -297,7 +304,7 @@ export function ScheduleManager({
           </button>
           <button
             className="text-button"
-            disabled={busy}
+            disabled={busy || !s.paymentMethod.trim()}
             onClick={async () => {
               setBusy(true);
               try {
@@ -316,6 +323,16 @@ export function ScheduleManager({
           title={exists ? "Edit schedule" : "New schedule"}
           onClose={() => setDraft(undefined)}
         >
+          {exists &&
+            !data.schedules
+              .find((s) => s.id === draft.id)
+              ?.paymentMethod.trim() && (
+              <p className="hint">
+                Choose a payment method to resume reconciliation. Missed dates
+                use the original schedule terms and this method; existing
+                entries and deleted/skipped dates stay unchanged.
+              </p>
+            )}
           <form
             className="optional-fields"
             onSubmit={async (e) => {
@@ -326,6 +343,7 @@ export function ScheduleManager({
               setError("");
               try {
                 const cents = parseMoney(amount);
+                requirePaymentMethod(draft.paymentMethod);
                 if (await onSave({ ...draft, amount: cents }, exists))
                   setDraft(undefined);
               } catch (e) {

@@ -3,6 +3,8 @@ import {
   localParts,
   money,
   totals,
+  merchantLabel,
+  merchantTotals,
   type Snapshot,
   type Transaction,
 } from "./model";
@@ -231,22 +233,10 @@ function Analytics({
   const [largestLimit, setLargestLimit] = useState(5);
   const [monthLimit, setMonthLimit] = useState(12);
   const name = (t: Transaction) =>
-    data.merchants.find((m) => m.id === t.merchantId)?.name ||
+    merchantLabel(t, data.merchants) ||
     data.categories.find((c) => c.id === t.categoryId)?.name ||
     "Transaction";
-  const merchants = [
-    ...new Set(
-      rows.filter((t) => t.type !== "income").map((t) => t.merchantId || ""),
-    ),
-  ]
-    .map((id) => ({
-      id,
-      name: id
-        ? data.merchants.find((m) => m.id === id)?.name || "Unknown merchant"
-        : "No merchant",
-      ...totals(rows.filter((t) => (t.merchantId || "") === id)),
-    }))
-    .sort((a, b) => b.netSpending - a.netSpending);
+  const merchants = merchantTotals(rows, data.merchants);
   let monthly: ReturnType<typeof trend> = [];
   let monthError = "";
   try {

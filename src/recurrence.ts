@@ -1,6 +1,7 @@
 import type { IDBPTransaction } from "idb";
 import { addDays, dateNumber, dueDates } from "./calendar";
 import {
+  requirePaymentMethod,
   categoryKind,
   localParts,
   type RecurringSchedule,
@@ -25,6 +26,8 @@ const stores: Stores[] = [
 type Tx = IDBPTransaction<LedgerSchema, Stores[], "readwrite">;
 async function processSchedule(tx: Tx, s: RecurringSchedule, today: string) {
   const added: Transaction[] = [];
+  // Legacy methodless schedules hold their cursor and receipts until explicitly corrected.
+  if (!s.paymentMethod.trim()) return { added, schedule: s };
   const from = s.processedThrough
     ? addDays(s.processedThrough, 1)
     : s.startDate;
@@ -138,6 +141,7 @@ export async function saveSchedule(
 ) {
   dateNumber(today);
   dateNumber(input.startDate);
+  requirePaymentMethod(input.paymentMethod);
   if (input.endDate) {
     dateNumber(input.endDate);
     if (input.endDate < input.startDate)
@@ -178,7 +182,13 @@ export async function saveSchedule(
     const added: Transaction[] = [];
     // First settle using the old terms. Edits cannot rewrite existing occurrences or charge new past dates.
     if (old) {
-      const result = await processSchedule(tx, old, today);
+      const result = await processSchedule(
+        tx,
+        old.paymentMethod.trim()
+          ? old
+          : { ...old, paymentMethod: input.paymentMethod.trim() },
+        today,
+      );
       old = result.schedule;
       added.push(...result.added);
     }

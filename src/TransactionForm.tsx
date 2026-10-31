@@ -2,6 +2,9 @@ import { PaymentField } from "./PaymentField";
 import { useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import {
+  merchantLabel,
+  requirePaymentMethod,
+  type Merchant,
   amountInput,
   categoryKind,
   localParts,
@@ -19,8 +22,10 @@ export function TransactionForm({
   onSave,
   onCancel,
   onCategorySelect,
+  onSaveMerchant,
 }: {
   data: Snapshot;
+  onSaveMerchant?: (merchant: Merchant) => Promise<boolean>;
   initial?: Transaction;
   onSave: (t: Transaction, editing: boolean) => Promise<boolean>;
   onCancel?: () => void;
@@ -53,7 +58,11 @@ export function TransactionForm({
     initial ? amountInput(initial.amount) : "",
   );
   const [merchantId, setMerchantId] = useState(initial?.merchantId || "");
-  const [merchantQuery, setMerchantQuery] = useState("");
+  const [merchantName, setMerchantName] = useState(initial?.merchantName || "");
+  const merchantLock = useRef(false);
+  const merchantText = merchantId
+    ? merchantLabel({ merchantId }, data.merchants)
+    : merchantName;
   const [description, setDescription] = useState(initial?.description || "");
   const [paymentMethod, setPaymentMethod] = useState(
     initial?.paymentMethod || "",
@@ -86,6 +95,7 @@ export function TransactionForm({
     setError("");
     try {
       const cents = parseMoney(amount);
+      requirePaymentMethod(paymentMethod);
       const parts = override
         ? { localDate: date, localTime: time }
         : localParts();
@@ -97,6 +107,12 @@ export function TransactionForm({
           amount: cents,
           categoryId,
           merchantId: merchantId || undefined,
+          merchantName:
+            !merchantId && merchantName.trim()
+              ? initial?.merchantName === merchantName
+                ? merchantName
+                : merchantName.trim()
+              : undefined,
           description: description.trim(),
           paymentMethod:
             initial?.paymentMethod === paymentMethod
@@ -120,7 +136,7 @@ export function TransactionForm({
         token.current = crypto.randomUUID();
         setAmount("");
         setMerchantId("");
-        setMerchantQuery("");
+        setMerchantName("");
         setDescription("");
         setPaymentMethod("");
         setOverride(false);
@@ -180,21 +196,28 @@ export function TransactionForm({
       </div>
       <div className="optional-fields">
         <label>
-          Find a saved merchant
+          Merchant / payee
           <input
-            type="search"
-            placeholder="Search merchants"
-            value={merchantQuery}
+            type="text"
+            placeholder="Optional"
+            value={merchantText}
             maxLength={80}
-            onChange={(e) => setMerchantQuery(e.target.value)}
+            disabled={busy}
+            autoComplete="off"
+            onChange={(e) => {
+              setMerchantId("");
+              setMerchantName(e.target.value);
+            }}
           />
         </label>
         <label>
-          Merchant / payee
+          Recurring merchant
           <select
+            disabled={busy}
             value={merchantId}
             onChange={(e) => {
               const id = e.target.value;
+              setMerchantName(id ? "" : merchantText);
               setMerchantId(id);
               const merchant = data.merchants.find((m) => m.id === id);
               const preferred = data.categories.find(
@@ -206,17 +229,9 @@ export function TransactionForm({
               if (preferred) selectCategory(preferred.id);
             }}
           >
-            <option value="">None</option>
+            <option value="">One-time / none</option>
             {data.merchants
-              .filter(
-                (m) =>
-                  (!m.archived || m.id === initial?.merchantId) &&
-                  (!merchantQuery ||
-                    m.name
-                      .toLowerCase()
-                      .includes(merchantQuery.toLowerCase()) ||
-                    m.id === merchantId),
-              )
+              .filter((m) => !m.archived || m.id === initial?.merchantId)
               .sort((a, b) => a.name.localeCompare(b.name))
               .map((m) => (
                 <option key={m.id} value={m.id}>
@@ -226,8 +241,36 @@ export function TransactionForm({
               ))}
           </select>
         </label>
-        {!data.merchants.some((m) => !m.archived) && (
-          <p className="hint">Save merchants in Settings → Merchants.</p>
+        {!merchantId && merchantName.trim() && onSaveMerchant && (
+          <button
+            type="button"
+            className="text-button"
+            disabled={busy}
+            onClick={async () => {
+              if (merchantLock.current) return;
+              merchantLock.current = true;
+              setBusy(true);
+              try {
+                const merchant: Merchant = {
+                  id: crypto.randomUUID(),
+                  name: merchantName.trim(),
+                  normalizedName: "",
+                  archived: false,
+                };
+                if (await onSaveMerchant(merchant)) {
+                  setMerchantId(merchant.id);
+                  setMerchantName("");
+                }
+              } catch (e) {
+                setError((e as Error).message);
+              } finally {
+                merchantLock.current = false;
+                setBusy(false);
+              }
+            }}
+          >
+            Save as recurring merchant
+          </button>
         )}
       </div>
       <div className="section-label">
@@ -325,7 +368,7 @@ export function TransactionForm({
                 .map((t) => (
                   <option value={t.id} key={t.id}>
                     {t.localDate} · {money(t.amount)} ·{" "}
-                    {data.merchants.find((m) => m.id === t.merchantId)?.name ||
+                    {merchantLabel(t, data.merchants) ||
                       data.categories.find((c) => c.id === t.categoryId)?.name}
                   </option>
                 ))}

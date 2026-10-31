@@ -8,6 +8,9 @@ import {
   X,
 } from "lucide-react";
 import {
+  merchantLabel,
+  merchantFilterOptions,
+  type Merchant,
   emptyFilters,
   filterTransactions,
   money,
@@ -68,8 +71,10 @@ export function History({
   onSave,
   onDelete,
   initialMerchant = "",
+  onSaveMerchant,
 }: {
   data: Snapshot;
+  onSaveMerchant?: (merchant: Merchant) => Promise<boolean>;
   onSave: (t: Transaction, editing: boolean) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   initialMerchant?: string;
@@ -108,7 +113,6 @@ export function History({
   }
   const active = data.transactions.find((t) => t.id === selected);
   const cat = (id: string) => data.categories.find((c) => c.id === id);
-  const merchant = (id?: string) => data.merchants.find((m) => m.id === id);
   return (
     <>
       <div className="page-heading">
@@ -187,12 +191,14 @@ export function History({
               onChange={(e) => set("merchantId", e.target.value)}
             >
               <option value="">All merchants</option>
-              {data.merchants.map((m) => (
-                <option value={m.id} key={m.id}>
-                  {m.name}
-                  {m.archived ? " · archived" : ""}
-                </option>
-              ))}
+              {merchantFilterOptions(data.merchants, data.transactions).map(
+                (m) => (
+                  <option value={m.value} key={m.value}>
+                    {m.name}
+                    {m.archived ? " · archived" : ""}
+                  </option>
+                ),
+              )}
             </select>
           </label>
           <label>
@@ -313,7 +319,7 @@ export function History({
               </span>
               <span className="row-main">
                 <strong>
-                  {merchant(t.merchantId)?.name ||
+                  {merchantLabel(t, data.merchants) ||
                     cat(t.categoryId)?.name ||
                     "Unknown category"}
                 </strong>
@@ -364,6 +370,7 @@ export function History({
             <TransactionForm
               data={data}
               initial={active}
+              onSaveMerchant={onSaveMerchant}
               onSave={async (t, e) => {
                 const ok = await onSave(t, e);
                 if (ok) setSelected(undefined);
@@ -381,7 +388,7 @@ export function History({
                 {[
                   ["Type", active.type],
                   ["Category", cat(active.categoryId)?.name],
-                  ["Merchant", merchant(active.merchantId)?.name || "None"],
+                  ["Merchant", merchantLabel(active, data.merchants) || "None"],
                   ["Description", active.description || "—"],
                   ["Payment method", active.paymentMethod || "—"],
                   ["Date", `${active.localDate} at ${active.localTime}`],

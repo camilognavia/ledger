@@ -30,7 +30,7 @@ const schedule = (
   amount: 1000,
   categoryId: "expense-4",
   description: "",
-  paymentMethod: "",
+  paymentMethod: "Cash",
   frequency: "daily",
   startDate: today,
   paused: false,
@@ -94,6 +94,10 @@ describe("Checkpoint 2 integration", () => {
     await user.click(screen.getByRole("button", { name: "Add schedule" }));
     await user.type(screen.getByLabelText("Schedule name"), "Cellphone");
     await user.type(screen.getByLabelText("Fixed amount (MXN)"), "250");
+    await user.selectOptions(
+      screen.getByLabelText("Schedule payment method"),
+      "value:Cash",
+    );
     await user.click(screen.getByRole("button", { name: "Save schedule" }));
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
@@ -111,6 +115,10 @@ describe("Checkpoint 2 integration", () => {
     await user.click(screen.getByRole("button", { name: /Cellphone monthly/ }));
     await user.clear(screen.getByLabelText("Fixed amount (MXN)"));
     await user.type(screen.getByLabelText("Fixed amount (MXN)"), "300");
+    await user.selectOptions(
+      screen.getByLabelText("Schedule payment method"),
+      "value:Cash",
+    );
     await user.click(screen.getByRole("button", { name: "Save schedule" }));
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
@@ -139,21 +147,37 @@ describe("Checkpoint 2 integration", () => {
     );
     await user.click(screen.getByRole("button", { name: "Add" }));
     await user.type(screen.getByLabelText("Amount"), "80");
+    await user.selectOptions(
+      screen.getByLabelText("Payment method"),
+      "value:Cash",
+    );
     await user.click(screen.getByRole("button", { name: "Save transaction" }));
     expect(await screen.findByText("Monthly budget notice · 1")).toBeVisible();
     await user.type(screen.getByLabelText("Amount"), "30");
+    await user.selectOptions(
+      screen.getByLabelText("Payment method"),
+      "value:Cash",
+    );
     await user.click(screen.getByRole("button", { name: "Save transaction" }));
     await waitFor(async () =>
       expect((await snapshot(db)).transactions).toHaveLength(2),
     );
     await user.click(screen.getByRole("button", { name: "Income" }));
     await user.type(screen.getByLabelText("Amount"), "1000");
+    await user.selectOptions(
+      screen.getByLabelText("Payment method"),
+      "value:Cash",
+    );
     await user.click(screen.getByRole("button", { name: "Save transaction" }));
     await waitFor(async () =>
       expect((await snapshot(db)).transactions).toHaveLength(3),
     );
     await user.click(screen.getByRole("button", { name: "Refund" }));
     await user.type(screen.getByLabelText("Amount"), "60");
+    await user.selectOptions(
+      screen.getByLabelText("Payment method"),
+      "value:Cash",
+    );
     await user.click(screen.getByRole("button", { name: "Save transaction" }));
     await waitFor(() =>
       expect(
@@ -215,6 +239,10 @@ describe("Checkpoint 2 integration", () => {
     ).toHaveAttribute("value", "0");
     await user.click(screen.getByRole("button", { name: "Add" }));
     await user.type(screen.getByLabelText("Amount"), "1");
+    await user.selectOptions(
+      screen.getByLabelText("Payment method"),
+      "value:Cash",
+    );
     await user.click(screen.getByRole("button", { name: "Save transaction" }));
     await waitFor(async () =>
       expect((await snapshot(db)).transactions).toHaveLength(1),

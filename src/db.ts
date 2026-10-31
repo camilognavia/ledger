@@ -1,5 +1,6 @@
 import { unwrap, openDB, type DBSchema, type IDBPDatabase } from "idb";
 import {
+  requirePaymentMethod,
   initialPaymentMethods,
   type PaymentMethod,
   categoryKind,
@@ -17,7 +18,7 @@ import {
   type Snapshot,
   type Transaction,
 } from "./model";
-export const DATABASE_VERSION = 4;
+export const DATABASE_VERSION = 5;
 export const DATABASE_NAME = "ledger";
 export interface LedgerSchema extends DBSchema {
   paymentMethods: {
@@ -121,9 +122,11 @@ export async function openLedger(name = DATABASE_NAME) {
           };
         }
       }
-      unwrap(tx)
-        .objectStore("metadata")
-        .put({ id: "schema", value: DATABASE_VERSION });
+      // Schema 5 adds optional transaction merchantName; no existing row/store is rewritten.
+      if (oldVersion < 5)
+        unwrap(tx)
+          .objectStore("metadata")
+          .put({ id: "schema", value: DATABASE_VERSION });
     },
     blocking() {
       db.close();
@@ -209,6 +212,17 @@ export async function saveTransaction(
   if (!["expense", "income", "refund"].includes(t.type))
     throw new Error("Invalid transaction type.");
   parseLocal(t.localDate, t.localTime);
+  requirePaymentMethod(t.paymentMethod);
+  if (
+    t.merchantName !== undefined &&
+    (t.merchantId ||
+      !t.merchantName.trim() ||
+      t.merchantName.length > 80 ||
+      t.merchantName.includes("\0"))
+  )
+    throw new Error(
+      "Use a one-time merchant name of 1–80 characters without a recurring merchant selection.",
+    );
   const tx = db.transaction(
     ["transactions", "categories", "merchants", "preferences"],
     "readwrite",

@@ -1,6 +1,12 @@
 import Papa from "papaparse";
 import type ExcelJS from "exceljs";
-import { amountInput, normalizeName, totals, type Snapshot } from "./model";
+import {
+  merchantLabel,
+  amountInput,
+  normalizeName,
+  totals,
+  type Snapshot,
+} from "./model";
 import { inRange } from "./finance";
 export const EXPORT_HEADERS = [
   "Date",
@@ -33,7 +39,7 @@ export function flatRows(data: Snapshot, from?: string, to?: string) {
       t.localTime,
       t.type,
       data.categories.find((c) => c.id === t.categoryId)?.name || "Other",
-      data.merchants.find((m) => m.id === t.merchantId)?.name || "",
+      merchantLabel(t, data.merchants),
       t.description,
       t.amount / 100,
       t.paymentMethod,

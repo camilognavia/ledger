@@ -81,7 +81,7 @@ export async function richDatabase(db: LedgerDB) {
     backupReminderDismissedMonth: "2026-09",
   });
   const table = readCSV(
-    "Date,Type,Category,Description,Amount,Transaction ID\n2026-10-04,expense,School,Imported manual,12.29,external-1",
+    "Date,Type,Category,Description,Amount,Payment method,Transaction ID\n2026-10-04,expense,School,Imported manual,12.29,Cash,external-1",
   );
   await commitImport(db, await previewImport(db, table, defaultMapping(table)));
   await db.put("metadata", { id: "custom", value: "Preserve me" });

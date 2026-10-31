@@ -1,5 +1,7 @@
 # Browser and iPhone acceptance checklist — NOT YET EXECUTED
 
+Current acceptance target: **Ledger 1.2**. Its section at the end supersedes earlier optional-payment and merchant-only-selection checks; prior sections remain historical context.
+
 The automated report is in TEST_REPORT.md. Use a deployed production build for these checks. Record device, iOS/browser version, date, result, and screenshots privately if useful. Do not mark these passed based on DOM tests.
 
 ## Installation and offline
@@ -103,3 +105,14 @@ The user reports v1.0 was installed/tested successfully on an iPhone; this does 
 - Combine History payment/type/category/merchant/date/amount/search filters; check legacy mixed-case/whitespace labels, referenced archives, custom labels and Unspecified.
 - Save JSON, restore on a disposable profile, inspect new metadata and every occurrence receipt/cursor. Export/import CSV/XLSX and inspect payment columns in Numbers/Excel.
 - Confirm Ready offline, then close/reopen in airplane mode (Wi-Fi off), record/edit a disposable entry, access payment management/filtering and data tools. Restore connectivity and verify the worker-update prompt without losing unfinished input.
+
+## Ledger 1.2 — pending real iPhone/Safari acceptance
+
+The cloud browser was unable to reach the local production preview (ERR_CONNECTION_REFUSED). DOM simulations verify behavior, not rendered mobile layout or keyboard/scrolling.
+
+- Upgrade the existing installed PWA through the existing URL/update prompt; do not reinstall or clear storage. Compare themes/type-amount controls/category grid/navigation with 1.1 at 320/375/390/430 px widths; verify normal scrolling, touch, keyboard and safe areas.
+- Type a one-time merchant, use it repeatedly, save and edit entries. It must appear in History/search/filter/analytics without entering Settings → Recurring merchants. Leave another merchant blank. Save as recurring explicitly, set a default category in Settings, select it, override the category, then type a one-time name; typing must not apply a default. Saving a merchant must not create a schedule/transaction.
+- Test required payment selection on expenses, income and refunds, including Other with/without custom text, a managed method and reset after save. A legacy unspecified edit must be blocked until a method is selected; simply viewing/exporting/backing up must preserve it.
+- In a disposable profile, restore a legacy snapshot containing a methodless schedule, valid schedules, deleted/skipped receipts, pauses and a cursor. Held schedules must be flagged and not post/advance. Correct the method, review catch-up notification and verify no duplication or deleted/skip resurrection after relaunch. Test paused correction and a month-end/leap anchor.
+- CSV/XLSX: normal missing-method rows must fail; explicit historical compatibility must retain blank methods. Imported names must remain one-time even when a matching recurring entity exists. Check labels/numeric cells in Numbers/Excel. JSON must preserve both merchant forms and all old state.
+- Verify Ready offline, then airplane-mode/Wi-Fi-off cold launch, one-time entry, required payment, history/analytics/settings and data tools. Reconnect and test worker update without losing unfinished input. No actual iPhone 1.2 result is recorded here.

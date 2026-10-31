@@ -37,8 +37,15 @@ describe("everyday entry and navigation", () => {
     const view = await start();
     await user.click(screen.getByRole("button", { name: "Groceries" }));
     await user.type(screen.getByRole("textbox", { name: "Amount" }), "85.25");
-    await user.selectOptions(screen.getByLabelText("Merchant / payee"), "cafe");
+    await user.selectOptions(
+      screen.getByLabelText("Recurring merchant"),
+      "cafe",
+    );
     await user.type(screen.getByLabelText("Description"), "Coffee");
+    await user.selectOptions(
+      screen.getByLabelText("Payment method"),
+      "value:Cash",
+    );
     await user.dblClick(
       screen.getByRole("button", { name: "Save transaction" }),
     );
@@ -46,7 +53,7 @@ describe("everyday entry and navigation", () => {
       expect((await snapshot(db)).transactions).toHaveLength(1),
     );
     expect(screen.getByRole("textbox", { name: "Amount" })).toHaveValue("");
-    expect(screen.getByLabelText("Merchant / payee")).toHaveValue("");
+    expect(screen.getByLabelText("Recurring merchant")).toHaveValue("");
     expect(screen.getByLabelText("Description")).toHaveValue("");
     expect(screen.getByRole("button", { name: "Groceries" })).toHaveAttribute(
       "aria-pressed",
@@ -65,6 +72,10 @@ describe("everyday entry and navigation", () => {
     const user = userEvent.setup();
     await start();
     await user.type(screen.getByRole("textbox", { name: "Amount" }), "1.234");
+    await user.selectOptions(
+      screen.getByLabelText("Payment method"),
+      "value:Cash",
+    );
     await user.click(screen.getByRole("button", { name: "Save transaction" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("two decimal");
     expect((await snapshot(db)).transactions).toHaveLength(0);
@@ -86,7 +97,10 @@ describe("everyday entry and navigation", () => {
       defaultCategoryId: "expense-1",
     });
     await start();
-    await user.selectOptions(screen.getByLabelText("Merchant / payee"), "cafe");
+    await user.selectOptions(
+      screen.getByLabelText("Recurring merchant"),
+      "cafe",
+    );
     expect(screen.getByRole("button", { name: "Groceries" })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -184,12 +198,20 @@ describe("additional integrity workflows", () => {
     await start();
     await user.click(screen.getByRole("button", { name: "Income" }));
     await user.type(screen.getByLabelText("Amount"), "100");
+    await user.selectOptions(
+      screen.getByLabelText("Payment method"),
+      "value:Cash",
+    );
     await user.click(screen.getByRole("button", { name: "Save transaction" }));
     await waitFor(async () =>
       expect((await snapshot(db)).transactions).toHaveLength(1),
     );
     await user.click(screen.getByRole("button", { name: "Refund" }));
     await user.type(screen.getByLabelText("Amount"), "20");
+    await user.selectOptions(
+      screen.getByLabelText("Payment method"),
+      "value:Cash",
+    );
     await user.click(screen.getByRole("button", { name: "Save transaction" }));
     await waitFor(async () =>
       expect((await snapshot(db)).transactions).toHaveLength(2),
@@ -208,6 +230,10 @@ describe("additional integrity workflows", () => {
     await user.type(screen.getByLabelText("Description"), "Do not lose this");
     const c = (await db.get("categories", "expense-0"))!;
     await db.put("categories", { ...c, archived: true });
+    await user.selectOptions(
+      screen.getByLabelText("Payment method"),
+      "value:Cash",
+    );
     await user.click(screen.getByRole("button", { name: "Save transaction" }));
     expect(await screen.findByText("Choose an active category.")).toBeVisible();
     expect(screen.getByLabelText("Amount")).toHaveValue("75");
@@ -220,7 +246,9 @@ describe("additional integrity workflows", () => {
     const user = userEvent.setup();
     await start();
     await user.click(screen.getByRole("button", { name: "Settings" }));
-    await user.click(screen.getByRole("button", { name: "Merchants" }));
+    await user.click(
+      screen.getByRole("button", { name: "Recurring merchants" }),
+    );
     await user.click(screen.getByRole("button", { name: "Add merchant" }));
     await user.type(screen.getByLabelText("Name"), "Cafe Ciencias");
     await user.click(screen.getByRole("button", { name: "Save merchant" }));

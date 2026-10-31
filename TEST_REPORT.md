@@ -1,71 +1,75 @@
-# Ledger 1.1 — test report
+# Ledger 1.2 — test report
 
-**v1.1.0 · schema 4 · 2026-10-21 UTC.** Linux container; Node 24.19.0, npm 11.9.0, TypeScript 5.9.x, Vite 7.3.7, Vitest 3.2.7. Runtime/dev dependency versions and integrity entries are unchanged from Checkpoint 3; only the project version advances in the lockfile.
+**v1.2.0 · IndexedDB schema 5 · 2026-10-31 (America/Mexico_City).** Linux container, Node 24.19.0, npm 11.9.0, TypeScript 5.9.x, Vite 7.3.7, Vitest 3.2.7. Dependency versions/integrity entries are unchanged from 1.1; only the project version advances in package files.
 
-## Baseline and preservation
+## Baseline and design preservation
 
-All packaged non-dist source/configuration/documentation files matched `Ledger-Checkpoint-3.zip` before editing. Baseline **156/156 tests**, lint, explicit TypeScript, production build and PWA validation passed. No project recreation or database reset. The prior test report is retained in `tests/fixtures/test-report-v1.md`.
+Every packaged non-dist source/configuration/documentation file matched `Ledger-1.1.zip` before edits. Baseline **177/177 tests**, lint, explicit TypeScript, production build and static PWA checks passed. The same checkout was extended; no recreation, database reset or deployment change. Prior reports remain in `tests/fixtures/test-report-v1.md` and `test-report-v1.1.md`.
 
-The approved CSS is byte-for-byte unchanged: SHA256 `6ffd609730e71adab2d45fd06c0c780323bd61b29862d158c75cf83a17c1f339`. A regression test compares the original transaction-type/amount markup fixture byte-for-byte. The existing navigation, manifest identity/scope/base, icons/assets, GitHub Pages workflow and financial/calendar/recurrence engines remain unchanged. Source comparisons do not substitute for visual/device testing.
+Approved stylesheet SHA256 remains `6ffd609730e71adab2d45fd06c0c780323bd61b29862d158c75cf83a17c1f339`, byte-identical to 1.1. The existing automated fixture verifies exact transaction-type/amount markup. Separate source comparison verified unchanged category-grid markup, budget/financial calculations, Gregorian calendar, worker registration, icons, manifest identity/scope/base and GitHub Pages workflow. Merchant labels/grouping are extended locally; financial accounting is unchanged. These checks are structural, not screenshot-based visual certification.
 
-## Required automated checks
+## Results
 
 | Check | Result |
 | --- | --- |
-| `npm test` | **177/177 passed**, 13 files, no unhandled errors |
-| `npm run lint` | Passed, no ESLint errors/warnings |
+| Complete `npm test` | **211/211 passed**, 15 files, no unhandled errors |
+| `npm run lint` | Passed, zero errors/warnings |
 | `npm run typecheck` | Passed |
 | `npm run build` | Passed, TypeScript/Vite/Workbox production output |
-| `npm run check:pwa` | Passed, standalone manifest/scope/icons/HTML/navigation fallback and all five JS/CSS assets in precache |
-| Mexico City regional suite | **116/116 passed**, 7 files |
-| New York regional suite | **96/96 passed**, 5 files |
+| `npm run check:pwa` | Passed, standalone manifest/scope/icons/HTML/navigation fallback and all five JS/CSS assets present in precache |
+| Mexico City regional suite | **139/139 passed**, 8 files |
+| New York regional suite | **119/119 passed**, 6 files, including relevant DST and restored recurrence cases |
 
-Regional commands (Linux):
+Regional commands executed on Linux:
 
 ```sh
-TZ=America/Mexico_City npm test -- src/calendar.test.ts src/finance.test.ts src/recurrence.test.ts src/migration.test.ts src/backup.test.ts src/transfer.test.ts src/payment.test.ts
-TZ=America/New_York npm test -- src/calendar.test.ts src/recurrence.test.ts src/backup.test.ts src/transfer.test.ts src/payment.test.ts
+TZ=America/Mexico_City npm test -- src/calendar.test.ts src/finance.test.ts src/recurrence.test.ts src/migration.test.ts src/backup.test.ts src/transfer.test.ts src/payment.test.ts src/release12.test.ts
+TZ=America/New_York npm test -- src/calendar.test.ts src/recurrence.test.ts src/backup.test.ts src/transfer.test.ts src/payment.test.ts src/release12.test.ts
 ```
 
-## Focused new coverage
+## New focused coverage
 
-`payment.test.ts` — **15 tests**:
+`release12.test.ts` — **23 tests**:
 
-- Add/rename/archive/reopen methods; normalized duplicate rejection includes archives. Original financial text remains unchanged.
-- Actual schema-3 IndexedDB-emulator fixture migrates all nine prior stores to schema 4 without reseeding/loss. Original rows, preferences, schedules, receipts/tombstones/skips/cursors, import provenance and budgets compare equal; recurrence stays idempotent.
-- All-store payment metadata backup roundtrip, strict idempotent merge, post-restore recurrence; schema-3 backup normalization derives choices without changing legacy strings.
-- Six corrupt payment-metadata cases (null, normalized duplicates, mismatch, nonboolean, missing store, unknown field) rejected before any destination write.
-- Deterministic normalized History options retain referenced archives/custom/legacy labels; combined type/category/merchant/range/amount/search predicates and Unspecified do not mutate rows.
-- Actual CSV/XLSX export/import after managed rename retains recorded payment labels, numeric amounts, manual-only identity and duplicate detection. Excel numeric cells inspected.
-- Approved CSS hash and original type/amount markup equality.
+- One-time/blank merchant persistence, editing/reopen and no automatic merchant/schedule creation; explicit recurring entity rename/archive/ID preservation without converting same-name one-time rows.
+- Combined saved/one-time merchant search and filters with type/category/payment/date/amount predicates. Normalized name analytics, refund/income totals and unchanged budget usage without storage identity merging.
+- Required payment validation on each transaction type's create/edit; direct historical fixtures remain exactly stored until explicitly corrected. Unspecified history filtering/export/complete JSON recovery.
+- Required payment on new/edited schedules; held legacy schedules preserve cursors and receipt states while healthy schedules run.
+- Correction catches up old frequency/anchor/amount terms with the chosen method before prospective term changes; deleted/skipped dates remain untouched. Restored held schedules, two concurrent correction connections, leap/month-end dates, paused-period skips and exactly-once subsequent reconciliation.
+- CSV and actual XLSX one-time merchant transfer never creates/associates recurring merchants, even for a matching existing name; numeric Excel cells and reimport deduplication checked.
+- Missing-payment imports blocked by default; explicit historical compatibility marks unspecified rows and commit rechecks the flag. Tampered non-compatible plans reject before writes.
+- Full JSON roundtrip/strict merge of both merchant types, method gaps, budgets and recurrence state. Four corrupt one-time-name cases reject before writes: simultaneous ID/name, excessive length, empty name and null.
+- Actual schema-4 fake-indexeddb fixture upgrades to schema 5, comparing all ten stores with old saved associations, unspecified payments, held schedules, occurrence generated/deleted/skipped receipts, cursors, budgets, preferences and import receipts. Old schema-4 JSON normalizes/restores without assigning methods or generating held entries.
 
-`PaymentUI.test.tsx` — **6 tests**:
+`release12.ui.test.tsx` — **11 tests**:
 
-- Always-visible field order, initially empty merchant/payment, initial choices, custom save/reset, including a custom name beginning with “Other”.
-- Other without custom text, configured Cash and Unspecified roundtrip.
-- Settings add/select/rename/archive workflow with historical label preservation and hidden archived new-entry choice.
-- Editing does not apply merchant defaults on mount; explicit merchant changes apply each compatible active default, with manual overrides and invalid/missing/archived/opposite-type defaults leaving category untouched.
-- Archived/legacy text remains selected and unchanged when editing.
-- Combined History control interactions; normalized duplicate options, archives, custom/unspecified values and record equality.
+- Repeated one-time entry clears as before, stays out of managed merchants and appears in History/search.
+- Explicit inline recurring save, duplicate handling, existing Settings entry point and no financial schedule/row creation.
+- Recurring default selection/manual override; switching to free text does not apply a default. One-time transaction editing retains category and does not save an entity.
+- Expense/income/refund payment validation with no preselection/None option; predefined, managed and custom values; post-save reset.
+- Legacy unspecified edit blocked until method selection; original stored record remains intact beforehand.
+- Held-schedule notice/list flag/disabled pause, existing editor validation, correction/catch-up and no repeated dues.
+- Default-off historical import compatibility, preview/explicit commit, unspecified payment preservation and one-time imported merchant.
+- Both merchant forms in the existing Analytical table, equal-name grouping and merchant selector behavior.
 
-## Retained regression suite
+## Retained regression coverage
 
-All **156 previous tests remain**: model 21, database 11, App UI 9, calendar 9, finance 15, recurrence 18, migrations 5, Checkpoint 2 UI 6, complete backup 31, transfer 23, data tools/reminders/accessibility UI 8. No test was deleted or disabled. The superseded “More details” clicks/suggestion expectation and current-schema assertions were updated to the explicitly requested behavior/version. Historical schema fixtures still create their original stores.
+All **177 existing tests remain**: model 21, db 11, App 9, calendar 9, finance 15, recurrence 18, migrations 5, Checkpoint2 UI 6, backup 31, transfer 23, DataTools UI 8, payment domain 15 and PaymentUI 6. No test was removed/disabled to pass. Tests expecting the superseded optional payment/automatic imported merchant behavior now assert the requested required-payment/one-time behavior. Ordinary fixture writes choose explicit methods; historical unspecified fixtures use direct old-row insertion or the explicit import compatibility route. Current-schema assertions advance to 5; actual old migration fixtures retain old versions/stores.
 
-Coverage retains transaction CRUD, integer centavos, separate income/refund accounting, receipt-month/category refund budgets, income exclusion, 80/100 warnings, excess refunds, monthly reset, monthly 29–31/leap/century edges, DST, independent-connection recurrence exactly once, deleted/skipped occurrence replay, edits/pause/resume, prospective schedules and launch/resume UI. Existing late write-failure tests prove restore/import rollback after clears/earlier writes; stale/tampered plans, strict merge conflicts, manual import identity guards and durable deleted-import receipts remain checked. New payment metadata participates in those same all-store transactions.
+Coverage still includes CRUD, integer-centavo arithmetic/overflow, expense/income/refund separation, receipt-month/category refunds, income excluded from budget availability, thresholds/reset/excess refunds, calendar 29–31/leap/century/DST behavior, concurrent exactly-once recurrence, deletion tombstones and cursor replay, pauses/resume/prospective edits, launch/resume flows, theme persistence, import provenance and complete restore/import rollback after late write failures. Backup unknown/malformed fields, stale previews, strict merge conflicts and imported automatic-identity guards remain exercised.
 
-## Production / PWA notes
+## Build and dependency notes
 
-The build includes production `dist/`, manifest, icons, worker and lazy data/Excel chunks. CSS remains 15.58 kB; main UI JS about 305.6 kB; lazy ExcelJS about 937 kB. Precache is about 1.26 MiB (16 entries including normal repeated icon listings). The generic >500 kB warning for the existing lazy Excel bundle remains; it is not hidden or a failed build. No new dependency, remote asset or runtime network requirement was added.
+Production ZIP includes complete `dist/`: unchanged CSS ~15.58 kB; main UI JS ~308.14 kB; lazy DataTools ~52.38 kB; existing lazy ExcelJS ~936.98 kB. Workbox reports 16 precache entries / ~1294.19 KiB. All lazy chunks are covered by static precache checks; no new dependency, external script, backend or runtime network requirement.
 
-The prior Checkpoint 3 audit reported two moderate package entries for one transitive ExcelJS/uuid advisory, no high/critical entries. Dependencies remain identical; no fresh network audit was performed for this small release and no clean-audit claim is made. The historical report retains its source/applicability assessment (ExcelJS no-buffer uuid v4 vs affected buffered v3/v5/v6 APIs). Upstream dependency maintenance remains a known limitation.
+The generic >500 kB Excel chunk warning is unchanged and expected; build succeeds. npm's container http-proxy environment warning is not an application failure. The 1.1 report carries the earlier two moderate ExcelJS/uuid package entries for one transitive advisory and its source/applicability assessment. Dependencies are unchanged; no fresh network audit was performed and no clean-audit/remediation claim is made.
 
-## Attempts and unverified acceptance
+## Browser attempt and unverified checks
 
-- A production preview starts successfully with `npx vite preview --host 127.0.0.1 --port 4173`. The default wildcard-host preview encountered this container's `uv_interface_addresses` restriction; explicit loopback worked. The cloud Chrome browser was selected and navigation to that local URL was attempted, but returned **ERR_CONNECTION_REFUSED**: the remote browser cannot reach this container's loopback server. No public deployment/tunnel or unsupported browser installation was attempted.
-- **Mobile visual/scrolling:** unverified. DOM tests verify normal source order, accessible fields and interactions; jsdom does not render an iPhone-sized viewport or simulate real keyboard scrolling. No screenshot-based design equivalence claim.
-- **iPhone/Safari:** not tested for 1.1 by us. The user reports actual iPhone success for the prior release, which is distinct. Keyboard, safe areas, VoiceOver, native selects, focus and installed update acceptance remain in MANUAL_QA.md.
-- **Offline runtime/service-worker lifecycle:** static manifest/precache validation passed, but actual worker install, offline cold launch and update activation could not be tested in the inaccessible browser.
-- **OS/browser persistence and applications:** fake-indexeddb tests validate IDB transactions/migrations, not physical crash/eviction durability. No Windows host, Excel/Numbers GUI, GitHub Actions deployment run or maximum-size benchmark. Existing file limits, unencrypted backups and storage-retention caveats remain.
+A production preview started with `npx vite preview --host 127.0.0.1 --port 4182 --strictPort`. The supported cloud Chrome browser was selected and attempted that URL, returning **ERR_CONNECTION_REFUSED**. The remote browser cannot reach this container's loopback service. No public deployment, network workaround or unsupported browser installation was performed.
 
-No known failing required automated check remains. Outstanding real-browser/device acceptance is explicitly pending, not reported as passed.
+Therefore actual iPhone-sized rendering/scrolling, native selects/keyboard, VoiceOver/focus/safe areas, runtime service-worker installation, offline cold launch and worker update activation remain **unverified for 1.2**. jsdom interaction tests do not render layout. The user's successful prior-release iPhone testing is distinct; no actual iPhone/Safari 1.2 testing is claimed. See MANUAL_QA.md for pending acceptance.
+
+IndexedDB tests use fake-indexeddb, not physical iOS crash/eviction/quota certification. No Windows host, Microsoft Excel/Numbers GUI, GitHub Actions deployment, largest-file dataset or multi-decade backlog benchmark was available. Existing in-memory/file bounds, unencrypted backups, storage-retention and strict-merge limitations remain.
+
+No known failing required automated check or unfinished requested implementation remains. Device/browser acceptance is pending and explicitly not marked passed. Stop after Ledger 1.2 delivery.

@@ -43,6 +43,7 @@ export function PaymentField({
       <label>
         {label}
         <select
+          aria-required="true"
           value={custom ? "custom" : value ? `value:${value}` : ""}
           onChange={(e) => {
             const other = e.target.value === "custom";
@@ -51,7 +52,9 @@ export function PaymentField({
             onChange(other ? "Other" : e.target.value.slice(6));
           }}
         >
-          <option value="">None</option>
+          <option value="" disabled hidden>
+            Select payment method
+          </option>
           {options
             .filter(([, name]) => normalizeName(name) !== "other")
             .map(([key, name]) => (
@@ -83,7 +86,7 @@ export function PaymentField({
             placeholder="Other"
             onChange={(e) => {
               setCustomText(e.target.value);
-              onChange(e.target.value || "Other");
+              onChange(e.target.value.trim() ? e.target.value : "Other");
             }}
           />
         </label>

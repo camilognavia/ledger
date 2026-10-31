@@ -36,7 +36,7 @@ async function renderTools() {
 const uploadCSV = () =>
   new File(
     [
-      "Date,Type,Category,Merchant,Description,Amount\n2026-10-01,expense,Groceries,Store,Food,12.29",
+      "Date,Type,Category,Merchant,Description,Amount,Payment method\n2026-10-01,expense,Groceries,Store,Food,12.29,Cash",
     ],
     "purchase.csv",
     { type: "text/csv" },

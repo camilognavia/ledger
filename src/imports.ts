@@ -7,6 +7,8 @@ import {
 } from "./backup";
 import { DATABASE_VERSION, type LedgerDB } from "./db";
 import {
+  merchantLabel,
+  requirePaymentMethod,
   categoryKind,
   normalizeName,
   parseLocal,
@@ -99,14 +101,13 @@ export function fingerprint(
   ]);
 }
 export function existingFingerprints(data: BackupData) {
-  const cats = new Map(data.categories.map((c) => [c.id, c.name])),
-    merchants = new Map(data.merchants.map((m) => [m.id, m.name]));
+  const cats = new Map(data.categories.map((c) => [c.id, c.name]));
   return new Set(
     data.transactions.map((t) =>
       fingerprint(
         t,
         cats.get(t.categoryId) || "",
-        merchants.get(t.merchantId || "") || "",
+        merchantLabel(t, data.merchants),
       ),
     ),
   );
@@ -120,6 +121,7 @@ export interface PreviewRow {
   receipt?: ImportReceipt;
 }
 export interface ImportPlan {
+  allowMissingPaymentMethods: boolean;
   base: string;
   rows: PreviewRow[];
   categories: Category[];
@@ -129,6 +131,7 @@ export async function previewImport(
   db: LedgerDB,
   table: RawTable,
   mapping: Mapping,
+  options: { allowMissingPaymentMethods?: boolean } = {},
 ): Promise<ImportPlan> {
   if (table.rows.length > 50000) throw new Error("Maximum 50,000 import rows.");
   if (mapping.date < 0 || mapping.amount < 0)
@@ -144,8 +147,7 @@ export async function previewImport(
   const data = await readData(tx);
   await tx.done;
   const base = canonical(data);
-  const cats = [...data.categories],
-    merchants = [...data.merchants];
+  const cats = [...data.categories];
   const seen = existingFingerprints(data);
   for (const r of data.imports) seen.add(r.fingerprint);
   const sources = new Set([
@@ -259,6 +261,8 @@ export async function previewImport(
         });
         continue;
       }
+      if (options.allowMissingPaymentMethods !== true)
+        requirePaymentMethod(paymentMethod);
       let category = cats.find(
         (c) =>
           c.kind === kind &&
@@ -275,26 +279,12 @@ export async function previewImport(
         };
         cats.push(category);
       }
-      let merchant = merchantName
-        ? merchants.find(
-            (m) => m.normalizedName === normalizeName(merchantName),
-          )
-        : undefined;
-      if (merchantName && !merchant) {
-        merchant = {
-          id: crypto.randomUUID(),
-          name: merchantName,
-          normalizedName: normalizeName(merchantName),
-          archived: false,
-        };
-        merchants.push(merchant);
-      }
       const now = Date.now();
       const t: Transaction = {
         id: crypto.randomUUID(),
         ...value,
         categoryId: category.id,
-        merchantId: merchant?.id,
+        merchantName: merchantName || undefined,
         occurredAt,
         createdAt: now,
         updatedAt: now,
@@ -310,7 +300,9 @@ export async function previewImport(
       rows.push({
         row: i + 2,
         status: "valid",
-        message: "Ready",
+        message: paymentMethod
+          ? "Ready"
+          : "Historical row · payment method unspecified",
         transaction: t,
         receipt,
       });
@@ -330,9 +322,8 @@ export async function previewImport(
     categories: cats.filter(
       (c) => !data.categories.some((old) => old.id === c.id),
     ),
-    merchants: merchants.filter(
-      (m) => !data.merchants.some((old) => old.id === m.id),
-    ),
+    merchants: [],
+    allowMissingPaymentMethods: options.allowMissingPaymentMethods === true,
   };
 }
 export async function commitImport(db: LedgerDB, plan: ImportPlan) {
@@ -343,6 +334,8 @@ export async function commitImport(db: LedgerDB, plan: ImportPlan) {
   const tx = db.transaction([...ALL_STORES], "readwrite");
   void tx.done.catch(() => {});
   try {
+    if (plan.merchants.length)
+      throw new Error("Imports cannot create recurring merchants.");
     const current = await readData(tx);
     if (canonical(current) !== plan.base)
       throw new Error(
@@ -380,10 +373,12 @@ export async function commitImport(db: LedgerDB, plan: ImportPlan) {
     for (const row of valid) {
       const t = row.transaction!,
         r = row.receipt!;
+      if (plan.allowMissingPaymentMethods !== true)
+        requirePaymentMethod(t.paymentMethod);
       const fp = fingerprint(
         t,
         candidate.categories.find((c) => c.id === t.categoryId)?.name || "",
-        candidate.merchants.find((m) => m.id === t.merchantId)?.name || "",
+        merchantLabel(t, candidate.merchants),
       );
       if (
         fp !== r.fingerprint ||

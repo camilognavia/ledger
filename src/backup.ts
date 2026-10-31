@@ -228,6 +228,7 @@ export function validateBackup(input: unknown): Backup {
         "amount",
         "categoryId",
         "merchantId",
+        "merchantName",
         "description",
         "paymentMethod",
         "occurredAt",
@@ -256,6 +257,9 @@ export function validateBackup(input: unknown): Backup {
       ],
     );
     transactionFields(r);
+    optional(r, "merchantName", (v) => text(v, 80));
+    if (t.merchantName !== undefined && t.merchantId)
+      fail("one-time merchant cannot also reference a recurring merchant.");
     date(r.localDate);
     text(r.localTime, 5);
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(t.localTime))

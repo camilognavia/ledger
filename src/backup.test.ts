@@ -199,7 +199,7 @@ describe("complete backup and atomic restore", () => {
     delete legacy.data.imports;
     delete legacy.data.preferences[0].summaryMode;
     const validated = validateBackup(legacy);
-    expect(validated.databaseVersion).toBe(4);
+    expect(validated.databaseVersion).toBe(5);
     expect(validated.data.transactions[0].id).toBe("v1-record");
     expect(validated.data.preferences[0].summaryMode).toBe("basic");
     expect(validated.data.imports).toEqual([]);

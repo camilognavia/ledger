@@ -102,7 +102,7 @@ export function Settings({
                 : section === "categories"
                   ? "Categories"
                   : section === "merchants"
-                    ? "Merchants"
+                    ? "Recurring merchants"
                     : section === "budgets"
                       ? "Budgets"
                       : section === "recurring"
@@ -151,22 +151,24 @@ export function Settings({
                 onClick={() => setSection(s)}
               >
                 <span>
-                  {s === "payments"
-                    ? "Payment methods"
-                    : s === "about"
-                      ? "Storage & installation"
-                      : s === "recurring"
-                        ? "Recurring transactions"
-                        : s === "transfer"
-                          ? "Data & backups"
-                          : s[0].toUpperCase() + s.slice(1)}
+                  {s === "merchants"
+                    ? "Recurring merchants"
+                    : s === "payments"
+                      ? "Payment methods"
+                      : s === "about"
+                        ? "Storage & installation"
+                        : s === "recurring"
+                          ? "Recurring transactions"
+                          : s === "transfer"
+                            ? "Data & backups"
+                            : s[0].toUpperCase() + s.slice(1)}
                 </span>
                 <ChevronRight size={18} />
               </button>
             ))}
           </section>
           <p className="hint version">
-            Ledger · v1.1.0
+            Ledger · v1.2.0
             <br />
             &nbsp;
           </p>
@@ -344,8 +346,8 @@ export function Settings({
       {section === "merchants" && (
         <>
           <p className="hint">
-            Selecting a merchant applies its default category. You can change
-            it.
+            Selecting a recurring merchant applies its default category.
+            One-time names stay with their transaction.
           </p>
           <input
             aria-label="Search saved merchants"

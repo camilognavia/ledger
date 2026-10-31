@@ -342,6 +342,12 @@ export default function App({
             </button>
           </aside>
         )}
+        {data.schedules.some((s) => !s.paymentMethod.trim()) && (
+          <aside className="backup-reminder" role="status">
+            Recurring schedules need a payment method. Automatic entries are
+            held; correct them in Settings → Recurring transactions.
+          </aside>
+        )}
         <BudgetWarnings data={data} />
         <main
           id="main-content"
@@ -369,6 +375,9 @@ export default function App({
               <TransactionForm
                 data={data}
                 onSave={onSave}
+                onSaveMerchant={(m) =>
+                  run(() => saveMerchant(db, m), "Recurring merchant saved")
+                }
                 onCategorySelect={(type, id) => {
                   void run(() => saveLastCategory(db, type, id), "");
                 }}
@@ -380,6 +389,9 @@ export default function App({
               data={data}
               onSave={onSave}
               initialMerchant={merchantHistory}
+              onSaveMerchant={(m) =>
+                run(() => saveMerchant(db, m), "Recurring merchant saved")
+              }
               onDelete={(id) =>
                 run(() => deleteTransaction(db, id), "Transaction deleted")
               }

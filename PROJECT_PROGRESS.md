@@ -1,6 +1,46 @@
 # Ledger project progress
 
-## Current delivery — Ledger 1.1
+## Current delivery — Ledger 1.2
+
+**v1.2.0 · IndexedDB `ledger`, schema 5 · 2026-10-31 (America/Mexico_City).** Exactly the two requested behavioral changes are implemented. Stop after delivery; no 1.3 work is authorized.
+
+### Continuation and completed work
+
+- All non-dist packaged source/configuration/documentation matched the delivered Ledger 1.1 ZIP before editing. Its **177 tests**, lint, explicit TypeScript, production build and PWA checks passed first. No recreation, dependency update, origin/path change or storage reset.
+- Optional one-time merchant names are stored on transactions only. Existing recurring selection/default categories remain explicit and overridable. Inline Save as recurring merchant and the renamed Settings section are intentional save paths; typing, repeated use, ordinary transaction saves/edits and imports never create managed merchants. Existing saved entities/IDs/defaults/archives/history are retained.
+- Unified merchant display, normalized search/combined filters and name-based Analytical grouping support saved IDs and one-time names without merging stored records. CSV/XLSX exports retain labels; imports create one-time labels, not recurring entities. JSON roundtrips preserve both forms.
+- Payment selection required on every new/manual edit of expense, income or refund, and new/edited schedules. No arbitrary default; Other/custom and payment management preserved. Historical unspecified records remain intact in History, filters, reports, exports and backups.
+- Legacy methodless schedules are flagged and held without cursor/receipt changes. Correction catches up old terms with the chosen method, exactly once, before prospective term changes. Deleted/skipped dates and paused-period semantics remain. Healthy schedules continue independently.
+- Schema 5 adds the optional transaction field/policy boundary and advances metadata only, with no old-record rewrite. Complete strict/atomic backup restoration accepts schemas 1–4 and preserves legacy missing payment values. Historical spreadsheet compatibility is an explicit, default-off, previewed choice; normal imports reject missing payments.
+- CSS, type/amount markup, category grid, finance/calendar implementation, original PWA identity/worker registration, icons and deployment workflow are unchanged. Existing styling/components reused; only necessary merchant/payment controls/validation/held-schedule notices changed.
+- Complete source, production dist, README, upgrade guide, format specification, changelog, decisions, test report and manual QA checklist packaged. Prior 1.1 test report retained in tests/fixtures.
+
+### Verification
+
+- **211/211 tests passed**, 15 files: all 177 retained tests plus **23** focused domain/storage/import/migration/recurrence tests and **11** UI tests. No test removed or disabled. Existing empty-payment fixtures/expectations were adapted to the explicitly requested policy, using direct old-record fixtures for historical data.
+- Lint, TypeScript, production build and static manifest/service-worker/precache checks passed.
+- Mexico City: **139/139** relevant tests; New York: **119/119**, including DST and leap/month-end recurrence, transfers/restoration and new compatibility tests.
+- Actual schema-4 IDB emulator migration compares all ten stores including saved associations, payment gaps, tombstones, skips, cursors, budgets, imports and preferences. Existing schema-1/2/3 migrations and rollback checks remain.
+- Automated CSS hash/type-amount fixture check passes; source comparison confirms category grid and deployment/financial files byte-identical. Dependency integrity entries unchanged apart from project version.
+
+### Outstanding acceptance and known limitations
+
+No known failing required automated check or unfinished requested implementation. A production preview ran locally; the available cloud Chrome browser returned ERR_CONNECTION_REFUSED to the container loopback URL. Therefore real rendered mobile layout/scrolling, keyboard, actual browser offline/update behavior and iPhone/Safari 1.2 are **unverified**. The user's prior-release iPhone testing is not represented as testing this update.
+
+Held schedules may accumulate legitimate dues until corrected. Correction immediately posts unprocessed active dues under old terms; review very old cursors/start dates. Originally paused dates are skipped. Legacy unspecified transactions and explicitly recovered spreadsheet rows keep their missing values; a later manual edit requires a method. No automatic merchant promotion/merging, bank integration or background service.
+
+All prior limitations remain: browser storage retention/eviction, in-memory snapshots, conservative deduplication/strict merge, unencrypted JSON and unprofiled maximum-size/backfill performance. The unchanged lazy Excel bundle emits the expected size warning. The prior transitive ExcelJS/uuid advisory assessment remains documented; no fresh audit or clean-audit claim.
+
+### Next checkpoint
+
+**None. Deliver Ledger 1.2 and stop.** Deploy via the same repository/Pages origin/path and existing update prompt. Do not reinstall, clear website data or downgrade the migrated database. See INSTALL.md for exact steps and legacy-schedule correction.
+
+## Archived progress records
+
+Everything below is historical; the current 1.2 section supersedes prior version/count/policy/acceptance statements.
+
+
+## Historical delivery — Ledger 1.1
 
 **v1.1.0 · IndexedDB `ledger`, schema 4 · 2026-10-21 UTC.** All four authorized usability refinements implemented. This is a direct extension of the delivered Checkpoint 3 source, not a recreation. Every archived source/package/document file matched Checkpoint 3 before editing (dist excluded from comparison because it was subsequently rebuilt). Baseline: 156 tests, lint, explicit TypeScript, production and PWA checks passed.
 

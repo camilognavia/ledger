@@ -1,15 +1,16 @@
 # Ledger changelog
 
-## 1.1.0 — 2026-10-21 UTC
+## 1.2.0 — 2026-10-31 (America/Mexico_City)
 
-A targeted continuation of the delivered Checkpoint 3 (1.0.0), with no redesign.
+Two targeted behavioral updates on the delivered Ledger 1.1 source; approved design preserved.
 
-- Replace payment text entry with an optional native dropdown and Other/custom field; reuse it in schedule editing. Add Settings payment-method creation, rename and archive/unarchive.
-- Add schema 4 payment metadata non-destructively. Keep recorded transaction/schedule text unchanged, including legacy values. Renames affect future choices; historical labels remain searchable by filter, editable, exportable and backed up.
-- Keep all entry details visible, in merchant → category → description → payment → date/time/refund order. Preserve the type/amount controls and post-save reset. Explicit merchant changes apply compatible active defaults; opening an edit keeps its saved category and users can override defaults.
-- Remove decorative slogans/redundant appearance copy, retaining their line boxes/whitespace. Preserve financial explanations, accessibility names, validation and data-loss/destructive warnings.
-- Add History payment filtering across active choices, referenced archives, custom/legacy labels and Unspecified. Combine with all current filters; normalize only option matching, never financial rows.
-- Include payment metadata in complete atomic JSON restoration/strict merge. Normalize older backups without changing existing values. Keep CSV/XLSX columns, numeric amounts, recurring identity guards and deduplication unchanged.
-- Add 21 focused tests. All 177 tests, lint, TypeScript, production build, static PWA and regional checks pass. Approved stylesheet, type/amount markup, assets/navigation, finance/recurrence engines, dependencies and deployment configuration are preserved.
+- **One-time and Recurring merchants:** type a one-time name or leave it blank; explicitly select/save a Recurring merchant for reuse/default categories. Rename Settings accordingly and preserve existing IDs/archives/associations. Never save merchants automatically from repeated use, edits or imports. History, search/filtering, merchant analytics, CSV/XLSX and JSON support both forms without merging stored records.
+- **Required payment methods:** all new/manual transaction edits and schedule saves require explicit selection, for expense/income/refund alike. Preserve Other/custom and management; remove selectable None. Keep historical unspecified values intact. Flag/hold methodless legacy schedules without advancing their cursor, then catch up old terms exactly once after correction; retain every deletion/skip receipt.
+- Schema **4→5** advances metadata only, adding support for optional transaction merchantName without rewriting records/stores. Older JSON restores atomically with missing methods preserved. Normal spreadsheet imports reject missing payments; explicit historical compatibility can recover them without assigning a method. Imported merchants stay one-time.
+- **211 tests pass**, plus lint, TypeScript, production, static PWA and timezone checks. CSS, type/amount controls, category grid, financial/calendar calculations, dependency versions, PWA identity and deployment configuration unchanged.
 
-Real-browser preview was attempted but the cloud browser could not reach the local server. Mobile scrolling, runtime offline and iPhone/Safari acceptance remain unverified for 1.1. See TEST_REPORT.md and INSTALL.md for verification and upgrade details. No deployment was performed.
+Real-browser preview was attempted but cloud Chrome could not reach the container's local server. Mobile layout/scrolling, runtime offline/update and iPhone/Safari acceptance remain unverified for 1.2. No deployment performed. See INSTALL.md, DATA_FORMAT.md and TEST_REPORT.md.
+
+## Previous release
+
+Ledger 1.1 introduced managed payment choices, always-visible entry details, merchant-first category defaults, quieter copy and payment History filtering. Its report is retained in tests/fixtures/test-report-v1.1.md.

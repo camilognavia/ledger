@@ -55,7 +55,7 @@ async function addSchedule(d: LedgerDB) {
       amount: 1000,
       categoryId: "expense-4",
       description: "Recurring",
-      paymentMethod: "",
+      paymentMethod: "Cash",
       frequency: "monthly",
       startDate: "2026-10-01",
       paused: false,
@@ -185,7 +185,9 @@ describe("CSV and real XLSX encoding", () => {
       new Uint8Array(await wb.xlsx.writeBuffer()).buffer,
     );
     const d = await fresh();
-    const plan = await previewImport(d, raw, defaultMapping(raw));
+    const plan = await previewImport(d, raw, defaultMapping(raw), {
+      allowMissingPaymentMethods: true,
+    });
     expect(plan.rows[0].transaction).toMatchObject({
       localDate: "2026-10-01",
       localTime: "12:30",
@@ -206,7 +208,7 @@ describe("mapped preview and safe append-only import", () => {
   it("requires a preview, does not write while previewing, maps reordered columns and creates independent entities", async () => {
     const d = await fresh();
     const raw = readCSV(
-      "Paid,Day,Who,Kind,Group,Details\n12.29,2026-10-01,Cafe,income,Consulting,Tutoring",
+      "Paid,Day,Who,Kind,Group,Details,Payment method\n12.29,2026-10-01,Cafe,income,Consulting,Tutoring,Cash",
     );
     const m = defaultMapping(raw);
     Object.assign(m, {
@@ -229,7 +231,8 @@ describe("mapped preview and safe append-only import", () => {
       description: "Tutoring",
       automatic: false,
     });
-    expect(data.merchants[0].name).toBe("Cafe");
+    expect(data.merchants).toEqual([]);
+    expect(data.transactions[0].merchantName).toBe("Cafe");
     expect(await d.count("imports")).toBe(1);
   });
   it("detects existing, in-file and previous-import duplicates, including deleted imports", async () => {
@@ -296,7 +299,7 @@ describe("mapped preview and safe append-only import", () => {
     const d = await fresh();
     await addSchedule(d);
     const raw = readCSV(
-      "Date,Time,Type,Category,Description,Amount\n2026-10-01,00:00,expense,Subscriptions,Recurring,10",
+      "Date,Time,Type,Category,Description,Amount,Payment method\n2026-10-01,00:00,expense,Subscriptions,Recurring,10,Cash",
     );
     expect(
       (await previewImport(d, raw, defaultMapping(raw))).rows[0].status,

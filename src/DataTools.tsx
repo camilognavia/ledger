@@ -46,6 +46,8 @@ export function DataTools({
   const [range, setRange] = useState(false),
     [from, setFrom] = useState(localParts().localDate.slice(0, 7) + "-01"),
     [to, setTo] = useState(localParts().localDate);
+  const [allowMissingPaymentMethods, setAllowMissingPaymentMethods] =
+    useState(false);
   const [table, setTable] = useState<RawTable>(),
     [mapping, setMapping] = useState<Mapping>(),
     [plan, setPlan] = useState<ImportPlan>(),
@@ -205,6 +207,7 @@ export function DataTools({
               e.target.value = "";
               if (file)
                 void work(async () => {
+                  setAllowMissingPaymentMethods(false);
                   setTable(undefined);
                   setPlan(undefined);
                   if (file.size > 10 * 1024 * 1024)
@@ -233,8 +236,25 @@ export function DataTools({
           otherwise the first worksheet. Date is required (YYYY-MM-DD or an
           Excel date cell); Amount is required and positive. Blank Type means
           expense; blank category uses Other; blank Time means 00:00. Unknown
-          categories/merchants are added. Formula, hyperlink and rich-text cells
-          must be converted to plain values first.
+          categories are added; merchant names remain one-time. Formula,
+          hyperlink and rich-text cells must be converted to plain values first.
+        </p>
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            disabled={busy}
+            checked={allowMissingPaymentMethods}
+            onChange={(e) => {
+              setAllowMissingPaymentMethods(e.target.checked);
+              setPlan(undefined);
+            }}
+          />
+          Allow historical rows without payment methods
+        </label>
+        <p className="hint">
+          New imports require a payment method. Use historical compatibility
+          only to recover old records with unspecified methods; no method is
+          assigned.
         </p>
         {table && mapping && (
           <>
@@ -272,7 +292,11 @@ export function DataTools({
               disabled={busy}
               onClick={() =>
                 void work(async () => {
-                  setPlan(await previewImport(db, table, mapping));
+                  setPlan(
+                    await previewImport(db, table, mapping, {
+                      allowMissingPaymentMethods,
+                    }),
+                  );
                   setMessage("Preview only. Nothing has been imported.");
                 })
               }
@@ -345,6 +369,7 @@ export function DataTools({
                 void work(async () => {
                   const count = await commitImport(db, plan);
                   setPlan(undefined);
+                  setAllowMissingPaymentMethods(false);
                   setTable(undefined);
                   await onChanged();
                   setMessage(

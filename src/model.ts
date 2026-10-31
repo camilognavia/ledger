@@ -22,6 +22,7 @@ export interface Transaction {
   amount: number;
   categoryId: string;
   merchantId?: string;
+  merchantName?: string;
   description: string;
   paymentMethod: string;
   occurredAt: number;
@@ -192,6 +193,86 @@ export const initialPaymentMethods: PaymentMethod[] = [
   normalizedName: normalizeName(name),
   archived: false,
 }));
+export function requirePaymentMethod(value: string) {
+  if (!value.trim()) throw new Error("Choose a payment method.");
+  if (value.length > 80 || value.includes("\0"))
+    throw new Error("Use a payment method of 1–80 characters.");
+}
+export function merchantLabel(
+  row: Pick<Transaction, "merchantId" | "merchantName">,
+  merchants: Merchant[],
+) {
+  return row.merchantId
+    ? merchants.find((m) => m.id === row.merchantId)?.name || ""
+    : row.merchantName || "";
+}
+export function merchantFilterOptions(
+  merchants: Merchant[],
+  rows: Transaction[],
+) {
+  const options = merchants.map((m) => ({
+    value: m.id,
+    name: m.name,
+    archived: m.archived,
+  }));
+  const known = new Set(merchants.map((m) => normalizeName(m.name)));
+  for (const row of rows) {
+    const name = merchantLabel(row, merchants),
+      key = normalizeName(name);
+    if (key && !known.has(key)) {
+      known.add(key);
+      options.push({ value: `one-time:${key}`, name, archived: false });
+    }
+  }
+  return options.sort(
+    (a, b) =>
+      normalizeName(a.name).localeCompare(normalizeName(b.name)) ||
+      a.value.localeCompare(b.value),
+  );
+}
+export function matchesMerchant(
+  row: Transaction,
+  merchants: Merchant[],
+  value: string,
+) {
+  if (row.merchantId === value) return true;
+  const saved = merchants.find((m) => m.id === value);
+  if (saved)
+    return (
+      row.merchantId === value ||
+      (!row.merchantId &&
+        normalizeName(row.merchantName || "") === normalizeName(saved.name))
+    );
+  return (
+    value.startsWith("one-time:") &&
+    normalizeName(merchantLabel(row, merchants)) === value.slice(9)
+  );
+}
+/** Reports group equivalent names only; transaction identities and saved entities never merge. */
+export function merchantTotals(rows: Transaction[], merchants: Merchant[]) {
+  const groups = new Map<
+    string,
+    { id: string; name: string; rows: Transaction[] }
+  >();
+  for (const t of rows) {
+    const name = merchantLabel(t, merchants),
+      id = normalizeName(name);
+    const group = groups.get(id) || {
+      id,
+      name:
+        merchants.find((m) => normalizeName(m.name) === id)?.name ||
+        name ||
+        "No merchant",
+      rows: [],
+    };
+    group.rows.push(t);
+    groups.set(id, group);
+  }
+  return [...groups.values()]
+    .filter((g) => g.rows.some((t) => t.type !== "income"))
+    .map((g) => ({ id: `name:${g.id}`, name: g.name, ...totals(g.rows) }))
+    .sort((a, b) => b.netSpending - a.netSpending || a.id.localeCompare(b.id));
+}
 export interface Filters {
   paymentMethod: string;
   query: string;
@@ -221,7 +302,6 @@ export function filterTransactions(
   merchants: Merchant[],
   f: Filters,
 ) {
-  const names = new Map(merchants.map((m) => [m.id, m.name.toLowerCase()]));
   const min = f.min ? parseMoney(f.min, true) : 0,
     max = f.max ? parseMoney(f.max, true) : Infinity;
   return rows
@@ -233,15 +313,15 @@ export function filterTransactions(
             : normalizeName(t.paymentMethod) === f.paymentMethod.slice(6))) &&
         (!f.type || t.type === f.type) &&
         (!f.categoryId || t.categoryId === f.categoryId) &&
-        (!f.merchantId || t.merchantId === f.merchantId) &&
+        (!f.merchantId || matchesMerchant(t, merchants, f.merchantId)) &&
         (!f.from || t.localDate >= f.from) &&
         (!f.to || t.localDate <= f.to) &&
         t.amount >= min &&
         t.amount <= max &&
         (!f.query ||
-          `${names.get(t.merchantId || "") || ""} ${t.description}`
-            .toLowerCase()
-            .includes(f.query.toLowerCase().trim())),
+          normalizeName(
+            `${merchantLabel(t, merchants)} ${t.description}`,
+          ).includes(normalizeName(f.query))),
     )
     .sort(
       (a, b) =>

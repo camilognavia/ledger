@@ -54,14 +54,7 @@ describe("Ledger 1.1 entry and management", () => {
       within(payment)
         .getAllByRole("option")
         .map((o) => o.textContent),
-    ).toEqual([
-      "None",
-      "Bank Transfer",
-      "Cash",
-      "Credit Card",
-      "Debit Card",
-      "Other",
-    ]);
+    ).toEqual(["Bank Transfer", "Cash", "Credit Card", "Debit Card", "Other"]);
     await user.selectOptions(payment, "custom");
     await user.type(
       screen.getByLabelText("Custom payment method (optional)"),
@@ -81,10 +74,10 @@ describe("Ledger 1.1 entry and management", () => {
       screen.queryByLabelText("Custom payment method (optional)"),
     ).not.toBeInTheDocument();
   });
-  it("saves Other without custom text, configured methods, and an unspecified method", async () => {
+  it("saves Other and configured methods; prevents an unspecified new entry", async () => {
     const user = userEvent.setup();
     await start();
-    for (const value of ["custom", "value:Cash", ""]) {
+    for (const value of ["custom", "value:Cash"]) {
       await user.selectOptions(screen.getByLabelText("Payment method"), value);
       await user.type(screen.getByLabelText("Amount"), "1");
       await user.click(
@@ -96,7 +89,13 @@ describe("Ledger 1.1 entry and management", () => {
     }
     expect(
       (await snapshot(db)).transactions.map((t) => t.paymentMethod).sort(),
-    ).toEqual(["", "Cash", "Other"]);
+    ).toEqual(["Cash", "Other"]);
+    await user.type(screen.getByLabelText("Amount"), "1");
+    await user.click(screen.getByRole("button", { name: "Save transaction" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Choose a payment method",
+    );
+    expect((await snapshot(db)).transactions).toHaveLength(2);
   });
   it("adds, selects, renames and archives a method in the existing Settings patterns", async () => {
     const user = userEvent.setup();
@@ -180,15 +179,15 @@ describe("Ledger 1.1 entry and management", () => {
         "true",
       );
     pressed("Food & Drinks");
-    await user.selectOptions(screen.getByLabelText("Merchant / payee"), "b");
+    await user.selectOptions(screen.getByLabelText("Recurring merchant"), "b");
     pressed("Transportation & Gas");
     await user.click(screen.getByRole("button", { name: "Shopping" }));
     pressed("Shopping");
     for (const id of ["none", "income", "archived", ""]) {
-      await user.selectOptions(screen.getByLabelText("Merchant / payee"), id);
+      await user.selectOptions(screen.getByLabelText("Recurring merchant"), id);
       pressed("Shopping");
     }
-    await user.selectOptions(screen.getByLabelText("Merchant / payee"), "a");
+    await user.selectOptions(screen.getByLabelText("Recurring merchant"), "a");
     pressed("Groceries");
     await user.click(screen.getByRole("button", { name: "Shopping" }));
     await user.click(screen.getByRole("button", { name: "Save changes" }));
@@ -249,7 +248,10 @@ describe("Ledger 1.1 entry and management", () => {
         description: "Refund",
       }),
     ];
-    for (const t of rows) await saveTransaction(db, t);
+    for (const t of rows) {
+      if (t.paymentMethod) await saveTransaction(db, t);
+      else await db.put("transactions", t);
+    }
     const cash = (await db.get("paymentMethods", "payment-0"))!;
     await savePaymentMethod(db, { ...cash, archived: true });
     render(

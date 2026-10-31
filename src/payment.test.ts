@@ -127,7 +127,7 @@ describe("payment metadata and compatibility", () => {
     expect(await reconcile(upgraded, "2026-10-05")).toEqual([]);
     expect(await upgraded.get("metadata", "schema")).toEqual({
       id: "schema",
-      value: 4,
+      value: 5,
     });
   });
   it("round-trips payment metadata atomically with all existing recurrence and import receipts", async () => {
